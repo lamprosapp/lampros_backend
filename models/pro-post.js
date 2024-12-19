@@ -23,6 +23,16 @@ const postSchema = new mongoose.Schema({
   priceDetails: priceSchema, // Price details with type, amount, and labor/material options
   images: [{ type: String }], // Array of strings to store image URLs
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Reference to the user who created the post
+  flags: [
+    {
+      reason: String,
+      flaggedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      timestamp: { type: Date, default: Date.now }
+    }
+  ],
+  flagCount: { type: Number, default: 0 }, // Tracks the total number of flags
+  isViolated: { type: Boolean, default: false }, // Marks the post as violated if flags exceed a threshold
+
 }, { timestamps: true });
 
 const Post = mongoose.model('Post', postSchema);
