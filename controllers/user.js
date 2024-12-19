@@ -380,3 +380,47 @@ export const filterUsersWithProjectsOrProducts = async (req, res) => {
     res.status(500).json({ message: 'Failed to retrieve users with projects/products', error: error.message });
   }
 };
+
+
+export const blockUser = async (req, res) => {
+  try {
+    const { userIdToBlock } = req.body; // ID of the user to block
+    const userId = req.user._id; // ID of the current logged-in user (assumes authentication middleware)
+
+    // Check if the user exists
+    const userToBlock = await User.findById(userIdToBlock);
+    if (!userToBlock) {
+      return res.status(404).json({ message: 'User to block not found.' });
+    }
+
+    // Update the blockedUsers array
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { $addToSet: { blockedUsers: userIdToBlock } }, // Add to set to avoid duplicates
+      { new: true }
+    );
+
+    res.status(200).json({ message: 'User blocked successfully', blockedUsers: user.blockedUsers });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to block user', error: error.message });
+  }
+};
+
+
+export const unblockUser = async (req, res) => {
+  try {
+    const { userIdToUnblock } = req.body; // ID of the user to unblock
+    const userId = req.user._id; // ID of the current logged-in user (assumes authentication middleware)
+
+    // Update the blockedUsers array
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { $pull: { blockedUsers: userIdToUnblock } }, // Remove from the array
+      { new: true }
+    );
+
+    res.status(200).json({ message: 'User unblocked successfully', blockedUsers: user.blockedUsers });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to unblock user', error: error.message });
+  }
+};
