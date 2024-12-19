@@ -1,5 +1,7 @@
 import mongoose from 'mongoose';
 import ProProject from '../models/pro-projects.js';
+import User from '../models/user.js';
+
 
 // Controller to handle adding a new project
 export const addProject = async (req, res) => {
@@ -8,7 +10,7 @@ export const addProject = async (req, res) => {
       sellerName, sellerPhoneNumber, projectType, projectLocation, constructionType, houseType,
       style, layout, numberOfBathrooms, areaSquareFeet, plotSize, scope, cost, about, images,
       floors, numberOfParkings, propertyOwnership, transactionTypeForProperty, plotSizeForProperty,
-      boundaryWall, cornerProperty, propertyAge,tags , title
+      boundaryWall, cornerProperty, propertyAge, tags, title
     } = req.body;
 
     // Create a new project with the data and the logged-in user as the creator
@@ -70,10 +72,15 @@ export const listAllProjectsByIds = async (req, res) => {
     // Determine sort order
     const sortOrder = order === 'asc' ? 1 : -1;
 
+    // Fetch the current logged-in user's details to get their blockedUsers list
+    const userId = req.user._id; // Assuming req.user contains the logged-in user's ID
+    const currentUser = await User.findById(userId).select('blockedUsers');
+    const blockedUsers = currentUser.blockedUsers;
+
     // Fetch projects by individual IDs using ProProject.findById
     let projects = [];
     if (ids && Array.isArray(ids) && ids.length > 0) {
-      const projectPromises = ids.map(id => 
+      const projectPromises = ids.map(id =>
         ProProject.findById(id)
           .populate('createdBy', '-password') // Populate 'createdBy' and exclude 'password'
           .lean()
@@ -83,6 +90,10 @@ export const listAllProjectsByIds = async (req, res) => {
 
     // Remove any `null` values if some IDs don't match
     projects = projects.filter(project => project !== null);
+
+    // Filter out projects created by blocked users
+    projects = projects.filter(project => !blockedUsers.includes(project.createdBy._id.toString()));
+
 
     // Apply sorting
     projects.sort((a, b) => {
@@ -151,6 +162,12 @@ export const listAllProjects = async (req, res) => {
     // Calculate the number of documents to skip
     const skip = (page - 1) * limit;
 
+
+    // Fetch the current logged-in user's details to get their blockedUsers list
+    const userId = req.user._id;
+    const currentUser = await User.findById(userId).select('blockedUsers');
+    const blockedUsers = currentUser.blockedUsers;
+
     // Fetch projects with pagination, sorting, and populate fields
     const projectsPromise = ProProject.find()
       .populate('createdBy', '-password') // Populate 'createdBy' and exclude 'password'
@@ -164,6 +181,11 @@ export const listAllProjects = async (req, res) => {
 
     // Execute both queries in parallel
     const [projects, total] = await Promise.all([projectsPromise, countPromise]);
+
+
+    // Filter out projects created by blocked users
+    const filteredProjects = projects.filter(project => !blockedUsers.includes(project.createdBy._id.toString()));
+
 
     // Calculate total pages
     const totalPages = Math.ceil(total / limit);
@@ -179,12 +201,12 @@ export const listAllProjects = async (req, res) => {
       });
     }
 
-    // Send the paginated response
+    // Send the paginated response with filtered projects
     res.status(200).json({
       currentPage: page,
       totalPages,
       totalProjects: total,
-      projects,
+      projects: filteredProjects,
     });
   } catch (error) {
     console.error('Error retrieving projects:', error);
@@ -219,6 +241,10 @@ export const listUserProjects = async (req, res) => {
     // Calculate the number of documents to skip
     const skip = (page - 1) * limit;
 
+    // Fetch the authenticated user's blocked users list
+    const currentUser = await User.findById(userId).select('blockedUsers');
+    const blockedUsers = currentUser.blockedUsers;
+
     // Fetch projects created by the authenticated user with pagination and sorting
     const projectsPromise = ProProject.find({ createdBy: userId })
       .populate('createdBy', '-password')
@@ -232,6 +258,10 @@ export const listUserProjects = async (req, res) => {
     // Execute both queries in parallel
     const [projects, total] = await Promise.all([projectsPromise, countPromise]);
 
+    // Filter out projects created by blocked users
+    const filteredProjects = projects.filter(project => !blockedUsers.includes(project.createdBy._id.toString()));
+
+
     // Handle case where requested page exceeds total pages
     const totalPages = Math.ceil(total / limit);
     if (page > totalPages && totalPages > 0) {
@@ -244,7 +274,7 @@ export const listUserProjects = async (req, res) => {
       currentPage: page,
       totalPages,
       totalProjects: total,
-      projects,
+      projects: filteredProjects,
     });
   } catch (error) {
     console.error('Error retrieving user projects:', error);
@@ -421,6 +451,11 @@ export const filterProjects = async (req, res) => {
       queryObject['warrantyAndCertifications.isoCertified'] = isoCertified === 'true';
     }
 
+    // Fetch the current logged-in user's details to get their blockedUsers list
+    const userId = mongoose.Types.ObjectId(req.user); // Assuming `req.user` contains the authenticated user's ID
+    const currentUser = await User.findById(userId).select('blockedUsers');
+    const blockedUsers = currentUser.blockedUsers;
+
     // Build sort options
     const sortOptions = {};
     sortOptions[sortBy] = order === 'asc' ? 1 : -1;
@@ -438,6 +473,10 @@ export const filterProjects = async (req, res) => {
 
     // Execute both queries in parallel
     const [projects, total] = await Promise.all([projectsPromise, countPromise]);
+
+    // Filter out projects created by blocked users
+    const filteredProjects = projects.filter(project => !blockedUsers.includes(project.createdBy._id.toString()));
+
 
     // Calculate total pages
     const totalPages = Math.ceil(total / limit);
@@ -459,7 +498,7 @@ export const filterProjects = async (req, res) => {
       currentPage: page,
       totalPages,
       totalProjects: total,
-      projects,
+      projects: filteredProjects,
     });
   } catch (error) {
     res.status(500).json({ message: 'Failed to retrieve projects', error: error.message });
@@ -614,6 +653,14 @@ export const generalSearchProjects = async (req, res) => {
     if (tags) {
       queryObject.tags = { $in: tags.split(',') };
     }
+
+    // Fetch the current logged-in user's details to get their blockedUsers list
+    const userId = mongoose.Types.ObjectId(req.user);
+    const currentUser = await User.findById(userId).select('blockedUsers');
+    const blockedUsers = currentUser.blockedUsers;
+
+    // Exclude projects from blocked users
+    queryObject.createdBy = { $nin: blockedUsers };
 
     // Build sort options
     const sortOptions = {};
