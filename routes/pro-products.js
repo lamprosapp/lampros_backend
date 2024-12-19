@@ -6,7 +6,8 @@ import {
   filterProducts, 
   searchProducts, 
   updateProduct, 
-  listAllProductsByIds 
+  listAllProductsByIds, 
+  deleteProduct
 } from '../controllers/pro-products.js';
 import { protect } from '../middlewares/protect.js'; 
 
@@ -30,6 +31,9 @@ router.post('/products/ids', protect, listAllProductsByIds);
 
 // Route to update a product by its ID (PUT /api/product/:productId)
 router.put('/product/:productId', protect, updateProduct);
+
+// Route to delete a product by its ID (DELETE /api/product/:productId)
+router.delete('/product/:productId', protect, deleteProduct);
 
 // Route to list products created by the authenticated user (GET /api/products/user)
 router.get('/products/user', protect, listUserProducts);
