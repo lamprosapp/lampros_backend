@@ -68,6 +68,8 @@ const UserSchema = new mongoose.Schema(
       affiliateSpecificField: { type: String },
     },
     deliveryAddresses: [deliveryAddressSchema],
+    blockedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], // Array of blocked user IDs
+
   },
   { timestamps: true } // Enable timestamps here
 );
