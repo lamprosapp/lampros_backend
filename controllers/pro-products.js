@@ -1,11 +1,12 @@
 import ProProduct from '../models/pro-products.js';
 import Brand from '../models/brand.js';
 import mongoose from 'mongoose';
+import User from '../models/user.js';
 
 // Controller to handle adding a new product with brand reference
 export const addProduct = async (req, res) => {
   try {
-    
+
     const {
       seller, name, category, subCategory, type, subType, price, quantity, about, technicalDetails,
       manufactureDetails, warrantyAndCertifications, images, brandId
@@ -60,9 +61,9 @@ export const updateProduct = async (req, res) => {
       manufactureDetails, warrantyAndCertifications, images, brandId
     } = req.body;
 
-   
 
-   
+
+
 
     // Find the product by ID
     const product = await ProProduct.findById(productId);
@@ -96,6 +97,26 @@ export const updateProduct = async (req, res) => {
   }
 };
 
+export const deleteProduct = async (req, res) => {
+  try {
+    const { productId } = req.params; // Get product ID from the request parameters
+
+    // Find the product by ID and delete it
+    const product = await ProProduct.findByIdAndDelete(productId);
+
+    // If the product does not exist, return a 404 error
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found.' });
+    }
+
+    // Send a success response
+    res.status(200).json({ message: 'Product deleted successfully', product });
+  } catch (error) {
+    // Handle any errors that occur
+    res.status(500).json({ message: 'Failed to delete product', error: error.message });
+  }
+};
+
 export const listAllProductsByIds = async (req, res) => {
   try {
     // Extract pagination parameters from query string
@@ -124,12 +145,23 @@ export const listAllProductsByIds = async (req, res) => {
     // Add search filter if provided
     if (search) filter.name = { $regex: search, $options: 'i' };
 
+    // Get the current logged-in user's ID
+    const userId = req.user._id;
+
+    // Fetch the current logged-in user's details to get their blockedUsers list
+    const user = await User.findById(userId).select('blockedUsers');
+    const blockedUsers = user.blockedUsers;
+
     // Fetch products by individual IDs using Product.findById
     let products = [];
     if (ids && Array.isArray(ids) && ids.length > 0) {
       const productPromises = ids.map(id => ProProduct.findById(id).populate('createdBy', '-password').populate('brand').lean());
       products = await Promise.all(productPromises);
     }
+
+    // Filter out products created by blocked users
+    products = products.filter(product => product && !blockedUsers.includes(product.createdBy._id.toString()));
+
 
     // Apply additional filtering on the fetched products
     if (brand) {
@@ -188,6 +220,13 @@ export const listAllProducts = async (req, res) => {
     if (brand) filter.brand = brand;
     if (search) filter.name = { $regex: search, $options: 'i' };
 
+    // Get the current logged-in user's ID
+    const userId = req.user._id;
+
+    // Fetch the current logged-in user's details to get their blockedUsers list
+    const user = await User.findById(userId).select('blockedUsers');
+    const blockedUsers = user.blockedUsers;
+
     const options = {
       page,
       limit,
@@ -202,11 +241,15 @@ export const listAllProducts = async (req, res) => {
 
     const result = await ProProduct.paginate(filter, options);
 
+    // Filter out products created by blocked users
+    const filteredProducts = result.docs.filter(product => !blockedUsers.includes(product.createdBy._id.toString()));
+
+
     res.status(200).json({
       currentPage: result.page,
       totalPages: result.totalPages,
       totalProducts: result.totalDocs,
-      products: result.docs,
+      products: filteredProducts,
     });
   } catch (error) {
     console.error('Error retrieving products:', error);
@@ -294,7 +337,7 @@ export const filterProducts = async (req, res) => {
 
       query.brand = { $in: brandIds };
     }
-    
+
     if (isValid(location)) {
       query['seller.location'] = location;
     }
@@ -402,6 +445,10 @@ export const filterProducts = async (req, res) => {
 
     const sortOptions = { [sortByField]: sortOrder };
 
+    // Fetch the current logged-in user's details to get their blockedUsers list
+    const currentUser = await User.findById(req.user).select('blockedUsers');
+    const blockedUsers = currentUser.blockedUsers;
+
     // Fetch products and total count
     const productsPromise = ProProduct.find(query)
       .populate('createdBy', '-password')
@@ -414,6 +461,10 @@ export const filterProducts = async (req, res) => {
     const countPromise = ProProduct.countDocuments(query).exec();
 
     const [products, total] = await Promise.all([productsPromise, countPromise]);
+
+    // Filter out products created by blocked users
+    const filteredProducts = products.filter(product => !blockedUsers.includes(product.createdBy._id.toString()));
+
 
     const totalPages = Math.ceil(total / limit);
 
@@ -431,7 +482,7 @@ export const filterProducts = async (req, res) => {
       currentPage: page,
       totalPages,
       totalProducts: total,
-      products,
+      products: filteredProducts,
     });
   } catch (error) {
     res.status(500).json({ message: 'Failed to retrieve products', error: error.message });
@@ -464,7 +515,9 @@ export const listUserProducts = async (req, res) => {
     // Make sure req.user is converted to ObjectId if needed
     const userId = mongoose.Types.ObjectId(req.user);
 
-    console.log('User ID:', userId);
+    // Fetch the current logged-in user's details to get their blockedUsers list
+    const currentUser = await User.findById(userId).select('blockedUsers');
+    const blockedUsers = currentUser.blockedUsers;
 
     // Fetch products created by the authenticated user
     const productsPromise = ProProduct.find({ createdBy: userId })
@@ -477,6 +530,12 @@ export const listUserProducts = async (req, res) => {
     const countPromise = ProProduct.countDocuments({ createdBy: userId });
 
     const [products, total] = await Promise.all([productsPromise, countPromise]);
+
+
+    // Filter out products created by blocked users
+    const filteredProducts = products.filter(product => !blockedUsers.includes(product.createdBy._id.toString()));
+
+
 
     const totalPages = Math.ceil(total / limit);
 
@@ -494,7 +553,7 @@ export const listUserProducts = async (req, res) => {
       currentPage: page,
       totalPages,
       totalProducts: total,
-      products,
+      products: filteredProducts,
     });
   } catch (error) {
     console.error('Error retrieving user products:', error);
@@ -679,6 +738,11 @@ export const searchProducts = async (req, res) => {
     const sortOptions = {};
     sortOptions[sortBy] = order === 'asc' ? 1 : -1;
 
+
+    // Fetch the current logged-in user's details to get their blockedUsers list
+    const currentUser = await User.findById(req.user).select('blockedUsers');
+    const blockedUsers = currentUser.blockedUsers;
+
     // Fetch products with pagination and populate brands
     const productsPromise = ProProduct.find(queryObject)
       .populate('createdBy', '-password')
@@ -693,6 +757,11 @@ export const searchProducts = async (req, res) => {
 
     // Execute both queries in parallel
     const [products, total] = await Promise.all([productsPromise, countPromise]);
+
+
+    // Filter out products created by blocked users
+    const filteredProducts = products.filter(product => !blockedUsers.includes(product.createdBy._id.toString()));
+
 
     // Calculate total pages
     const totalPages = Math.ceil(total / limit);
@@ -711,14 +780,14 @@ export const searchProducts = async (req, res) => {
     // If brand filter is provided, filter products based on brand name
     if (brand) {
       const brandNames = brand.split(',');
-      const filteredProducts = products.filter(product =>
+      const filteredByBrand = filteredProducts.filter(product =>
         product.brand && brandNames.includes(product.brand.name)
       );
       return res.status(200).json({
         currentPage: page,
         totalPages,
-        totalProducts: filteredProducts.length,
-        products: filteredProducts,
+        totalProducts: filteredByBrand.length,
+        products: filteredByBrand,
       });
     }
 
@@ -726,12 +795,10 @@ export const searchProducts = async (req, res) => {
     res.status(200).json({
       currentPage: page,
       totalPages,
-      totalProducts: total,
-      products,
+      totalProducts: filteredProducts.length,
+      products: filteredProducts,
     });
   } catch (error) {
     res.status(500).json({ message: 'Failed to search products', error: error.message });
   }
 };
-
-
