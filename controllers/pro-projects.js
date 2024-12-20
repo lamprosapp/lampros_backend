@@ -73,9 +73,9 @@ export const listAllProjectsByIds = async (req, res) => {
     const sortOrder = order === 'asc' ? 1 : -1;
 
     // Fetch the current logged-in user's details to get their blockedUsers list
-    const userId = req.user._id; // Assuming req.user contains the logged-in user's ID
-    const currentUser = await User.findById(userId).select('blockedUsers');
-    const blockedUsers = currentUser.blockedUsers;
+    //const userId = req.user._id; // Assuming req.user contains the logged-in user's ID
+    //const currentUser = await User.findById(userId).select('blockedUsers');
+    //const blockedUsers = currentUser.blockedUsers;
 
     // Fetch projects by individual IDs using ProProject.findById
     let projects = [];
@@ -164,9 +164,9 @@ export const listAllProjects = async (req, res) => {
 
 
     // Fetch the current logged-in user's details to get their blockedUsers list
-    const userId = req.user._id;
-    const currentUser = await User.findById(userId).select('blockedUsers');
-    const blockedUsers = currentUser.blockedUsers;
+    //const userId = req.user._id;
+    //const currentUser = await User.findById(userId).select('blockedUsers');
+    //const blockedUsers = currentUser.blockedUsers;
 
     // Fetch projects with pagination, sorting, and populate fields
     const projectsPromise = ProProject.find()
@@ -206,7 +206,7 @@ export const listAllProjects = async (req, res) => {
       currentPage: page,
       totalPages,
       totalProjects: total,
-      projects: filteredProjects,
+      projects,
     });
   } catch (error) {
     console.error('Error retrieving projects:', error);
@@ -242,8 +242,8 @@ export const listUserProjects = async (req, res) => {
     const skip = (page - 1) * limit;
 
     // Fetch the authenticated user's blocked users list
-    const currentUser = await User.findById(userId).select('blockedUsers');
-    const blockedUsers = currentUser.blockedUsers;
+    //const currentUser = await User.findById(userId).select('blockedUsers');
+    //const blockedUsers = currentUser.blockedUsers;
 
     // Fetch projects created by the authenticated user with pagination and sorting
     const projectsPromise = ProProject.find({ createdBy: userId })
@@ -274,7 +274,7 @@ export const listUserProjects = async (req, res) => {
       currentPage: page,
       totalPages,
       totalProjects: total,
-      projects: filteredProjects,
+      projects,
     });
   } catch (error) {
     console.error('Error retrieving user projects:', error);
@@ -452,9 +452,9 @@ export const filterProjects = async (req, res) => {
     }
 
     // Fetch the current logged-in user's details to get their blockedUsers list
-    const userId = mongoose.Types.ObjectId(req.user); // Assuming `req.user` contains the authenticated user's ID
-    const currentUser = await User.findById(userId).select('blockedUsers');
-    const blockedUsers = currentUser.blockedUsers;
+    //const userId = mongoose.Types.ObjectId(req.user); // Assuming `req.user` contains the authenticated user's ID
+    //const currentUser = await User.findById(userId).select('blockedUsers');
+    //const blockedUsers = currentUser.blockedUsers;
 
     // Build sort options
     const sortOptions = {};
@@ -498,7 +498,7 @@ export const filterProjects = async (req, res) => {
       currentPage: page,
       totalPages,
       totalProjects: total,
-      projects: filteredProjects,
+      projects,
     });
   } catch (error) {
     res.status(500).json({ message: 'Failed to retrieve projects', error: error.message });
@@ -655,12 +655,12 @@ export const generalSearchProjects = async (req, res) => {
     }
 
     // Fetch the current logged-in user's details to get their blockedUsers list
-    const userId = mongoose.Types.ObjectId(req.user);
-    const currentUser = await User.findById(userId).select('blockedUsers');
-    const blockedUsers = currentUser.blockedUsers;
+    //const userId = mongoose.Types.ObjectId(req.user);
+    //const currentUser = await User.findById(userId).select('blockedUsers');
+    //const blockedUsers = currentUser.blockedUsers;
 
     // Exclude projects from blocked users
-    queryObject.createdBy = { $nin: blockedUsers };
+    //queryObject.createdBy = { $nin: blockedUsers };
 
     // Build sort options
     const sortOptions = {};
