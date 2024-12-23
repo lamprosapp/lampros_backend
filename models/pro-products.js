@@ -83,7 +83,20 @@ const productSchema = new mongoose.Schema({
     default: 0,
   },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  updatedAt: { type: Date, default: Date.now }, // Automatically set the update date            
+  updatedAt: { type: Date, default: Date.now }, // Automatically set the update date 
+  loadCapacity: { type: String }, // Load Capacity
+  mountType: { type: String }, // Mount type
+  handleType: { type: String }, // Handle type
+  noOfHandles: { type: Number }, // Number of handles
+  hoseLength: { type: String }, // Hose length
+  storageCapacity: { type: String }, // Storage capacity
+  storageLayout: { type: String }, // Storage layout
+  doorType: { type: String }, // Door type
+  seatingCapacity: { type: Number }, // Seating capacity
+  frameMaterial: { type: String }, // Frame material
+  suspensionType: { type: String }, // Suspension type
+  size: { type: String }, // Size
+  storageOptions: { type: [String] }, // Storage options (Array of strings)
 }, { timestamps: true });
 
 
