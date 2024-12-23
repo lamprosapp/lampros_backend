@@ -25,6 +25,7 @@ const proProjectSchema = new mongoose.Schema({
   style: { type: String }, // Free text field (e.g., Modern, Traditional)
   title: { type: String },
   layout: { type: String }, // Free text field (e.g., 2BHK, 3BHK)
+  brand: { type: mongoose.Schema.Types.ObjectId, ref: 'Brand' },
   numberOfBathrooms: { type: Number },
   areaSquareFeet: { type: Number }, // Area in square feet
   plotSize: { type: Number }, // Plot size in square/cents
@@ -52,6 +53,15 @@ const proProjectSchema = new mongoose.Schema({
   },
   createdAt: { type: Date, default: Date.now }, // Automatically set the creation date
   updatedAt: { type: Date, default: Date.now }, // Automatically set the update date
+  flags: [
+    {
+      reason: { type: String },
+      flaggedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      timestamp: { type: Date, default: Date.now }
+    }
+  ],
+  flagCount: { type: Number, default: 0 }, // Tracks the total number of flags
+  isViolated: { type: Boolean, default: false }, // Set to true if the flag count reaches 5
 }, { timestamps: true });
 
 const ProProject = mongoose.model('ProProject', proProjectSchema);
