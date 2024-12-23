@@ -9,7 +9,9 @@ export const addProduct = async (req, res) => {
 
     const {
       seller, name, category, subCategory, type, subType, price, quantity, about, technicalDetails,
-      manufactureDetails, warrantyAndCertifications, images, brandId
+      manufactureDetails, warrantyAndCertifications, images, brandId, 
+      loadCapacity, mountType, handleType, noOfHandles, hoseLength, storageCapacity, storageLayout, 
+      doorType, seatingCapacity, frameMaterial, suspensionType, size, storageOptions
     } = req.body;
 
     // Validate required fields
@@ -23,7 +25,6 @@ export const addProduct = async (req, res) => {
       return res.status(400).json({ message: 'Brand not found or not approved by admin.' });
     }
 
-    // Create a new product with the data and the logged-in user as the creator
     const product = new ProProduct({
       seller,
       name,
@@ -39,6 +40,19 @@ export const addProduct = async (req, res) => {
       manufactureDetails,
       warrantyAndCertifications,
       images,
+      loadCapacity,
+      mountType,
+      handleType,
+      noOfHandles,
+      hoseLength,
+      storageCapacity,
+      storageLayout,
+      doorType,
+      seatingCapacity,
+      frameMaterial,
+      suspensionType,
+      size,
+      storageOptions,
       createdBy: req.user, // Assumes req.user contains the authenticated user's data
     });
 
