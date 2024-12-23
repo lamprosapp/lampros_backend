@@ -53,6 +53,87 @@ export const addProject = async (req, res) => {
   }
 };
 
+
+export const deleteProject = async (req, res) => {
+  try {
+    const { projectId } = req.params; // Get project ID from the request parameters
+
+    // Find the project by ID and delete it
+    const project = await ProProject.findByIdAndDelete(projectId);
+
+    // If the project does not exist, return a 404 error
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found.' });
+    }
+
+    // Send a success response
+    res.status(200).json({ message: 'Project deleted successfully', project });
+  } catch (error) {
+    // Handle any errors that occur
+    res.status(500).json({ message: 'Failed to delete project', error: error.message });
+  }
+};
+
+export const flagProject = async (req, res) => {
+  try {
+    const { projectId, reason } = req.body; // The project ID and the reason for flagging
+    const flaggedBy = req?.user; // ID of the user who is flagging the project
+
+    // Find the project to flag
+    const project = await ProProject.findById(projectId);
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found.' });
+    }
+
+    // Add a new flag to the project's flags array
+    const flag = {
+      reason,
+      flaggedBy,
+      timestamp: new Date(),
+    };
+
+    // Add the flag and increment the flagCount
+    project.flags.push(flag);
+    project.flagCount += 1;
+
+    // Check if flagCount reaches 5 and mark the project as violated
+    if (project.flagCount >= 5) {
+      project.isViolated = true;
+    }
+
+    // Save the updated project
+    await project.save();
+
+    res.status(200).json({ message: 'Project flagged successfully', project });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to flag project', error: error.message });
+  }
+};
+
+export const clearFlags = async (req, res) => {
+  try {
+    const { projectId } = req.body; // The project ID whose flags should be cleared
+
+    // Find the project to clear flags from
+    const project = await ProProject.findById(projectId);
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found.' });
+    }
+
+    // Clear the flags array and reset flagCount and isViolated
+    project.flags = [];
+    project.flagCount = 0;
+    project.isViolated = false;
+
+    // Save the updated project
+    await project.save();
+
+    res.status(200).json({ message: 'Flags cleared successfully', project });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to clear flags', error: error.message });
+  }
+};
+
 export const listAllProjectsByIds = async (req, res) => {
   try {
     // Extract pagination parameters from query
@@ -91,8 +172,8 @@ export const listAllProjectsByIds = async (req, res) => {
     // Remove any `null` values if some IDs don't match
     projects = projects.filter(project => project !== null);
 
-    // Filter out projects created by blocked users
-    projects = projects.filter(project => !blockedUsers.includes(project.createdBy._id.toString()));
+    // Filter out violated projects (where isViolated is true)
+    projects = projects.filter(project => !project.isViolated);
 
 
     // Apply sorting
@@ -141,6 +222,9 @@ export const listAllProjectsByIds = async (req, res) => {
 // Controller to list all projects
 export const listAllProjects = async (req, res) => {
   try {
+
+    // Initialize a query object
+    let query = {};
     // Extract and parse pagination parameters from query, set default values
     let { page = 1, limit = 10, sortBy = 'createdAt', order = 'desc' } = req.query;
 
@@ -164,12 +248,18 @@ export const listAllProjects = async (req, res) => {
 
 
     // Fetch the current logged-in user's details to get their blockedUsers list
-    //const userId = req.user._id;
-    //const currentUser = await User.findById(userId).select('blockedUsers');
-    //const blockedUsers = currentUser.blockedUsers;
+    const userId = req?.user;
+    const user = userId ? await User.findById(userId) : null;
+    const blockedUsers = user?.blockedUsers || [];
 
+    if (blockedUsers.length > 0) {
+      query['createdBy'] = { $nin: blockedUsers };
+    }
+
+    // Add a filter to exclude violated projects (isViolated: true)
+    query['isViolated'] = { $ne: true };
     // Fetch projects with pagination, sorting, and populate fields
-    const projectsPromise = ProProject.find()
+    const projectsPromise = ProProject.find(query)
       .populate('createdBy', '-password') // Populate 'createdBy' and exclude 'password'
       .sort({ [sortBy]: sortOrder }) // Sort based on query parameters
       .skip(skip)
@@ -181,11 +271,6 @@ export const listAllProjects = async (req, res) => {
 
     // Execute both queries in parallel
     const [projects, total] = await Promise.all([projectsPromise, countPromise]);
-
-
-    // Filter out projects created by blocked users
-    const filteredProjects = projects.filter(project => !blockedUsers.includes(project.createdBy._id.toString()));
-
 
     // Calculate total pages
     const totalPages = Math.ceil(total / limit);
@@ -241,12 +326,8 @@ export const listUserProjects = async (req, res) => {
     // Calculate the number of documents to skip
     const skip = (page - 1) * limit;
 
-    // Fetch the authenticated user's blocked users list
-    //const currentUser = await User.findById(userId).select('blockedUsers');
-    //const blockedUsers = currentUser.blockedUsers;
-
     // Fetch projects created by the authenticated user with pagination and sorting
-    const projectsPromise = ProProject.find({ createdBy: userId })
+    const projectsPromise = ProProject.find({ createdBy: userId, isViolated: { $ne: true } })
       .populate('createdBy', '-password')
       .sort({ [sortBy]: sortOrder })
       .skip(skip)
@@ -257,9 +338,6 @@ export const listUserProjects = async (req, res) => {
 
     // Execute both queries in parallel
     const [projects, total] = await Promise.all([projectsPromise, countPromise]);
-
-    // Filter out projects created by blocked users
-    const filteredProjects = projects.filter(project => !blockedUsers.includes(project.createdBy._id.toString()));
 
 
     // Handle case where requested page exceeds total pages
@@ -459,6 +537,19 @@ export const filterProjects = async (req, res) => {
     // Build sort options
     const sortOptions = {};
     sortOptions[sortBy] = order === 'asc' ? 1 : -1;
+
+
+    // Fetch the current logged-in user's details to get their blockedUsers list
+    const userId = req?.user;
+    const user = userId ? await User.findById(userId) : null;
+    const blockedUsers = user?.blockedUsers || [];
+
+    if (blockedUsers.length > 0) {
+      queryObject['createdBy'] = { $nin: blockedUsers };
+    }
+
+    // Add a filter to exclude violated projects (isViolated: true)
+    queryObject['isViolated'] = { $ne: true };
 
     // Fetch projects with pagination, sorting, and populate fields
     const projectsPromise = ProProject.find(queryObject)
@@ -665,7 +756,16 @@ export const generalSearchProjects = async (req, res) => {
     // Build sort options
     const sortOptions = {};
     sortOptions[sortBy] = sortOrder;
+    // Fetch the current logged-in user's details to get their blockedUsers list
+    const userId = req?.user;
+    const user = userId ? await User.findById(userId) : null;
+    const blockedUsers = user?.blockedUsers || [];
 
+    if (blockedUsers.length > 0) {
+      queryObject['createdBy'] = { $nin: blockedUsers };
+    }
+    // Add a filter to exclude violated projects (isViolated: true)
+    queryObject['isViolated'] = { $ne: true };
     // Fetch projects with pagination, sorting, and populate fields
     const projectsPromise = ProProject.find(queryObject)
       .populate('createdBy', '-password')
