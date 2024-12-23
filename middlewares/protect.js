@@ -1,17 +1,17 @@
 import express from 'express';
 import { verifyToken } from '../config/jwt.js';
 
-export const protect = (req, res, next) => {
+export const protect =  async(req, res, next) => {
   let token;
 
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     try {
       token = req.headers.authorization.split(' ')[1];
-      const decoded = verifyToken(token);
+      const decoded = await verifyToken(token);
       req.user = decoded.id; // Add the decoded user ID to the request object
       next();
     } catch (error) {
-      res.status(401).json({ message: 'Not authorized, token failed' });
+      res.status(401).json({ message: 'Not authorized, token failed', error });
     }
   }
 
