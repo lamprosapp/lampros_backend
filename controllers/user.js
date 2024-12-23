@@ -323,6 +323,16 @@ export const filterUsersWithProjectsOrProducts = async (req, res) => {
       filter.type = { $in: typeArray };
     }
 
+    // Get the current user's blocked users
+    const userId = req?.user;
+    const user = userId ? await User.findById(userId) : null;
+    const blockedUsers = user?.blockedUsers || [];
+
+    // Build a filter object for MongoDB
+    filter = {
+      _id: { $nin: blockedUsers }, // Exclude blocked users
+    };
+
     // Fetch users based on the role and type with pagination
     const usersPromise = User.find(filter)
       .select('-password') // Exclude password and other unnecessary fields
