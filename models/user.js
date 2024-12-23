@@ -9,7 +9,7 @@ const deliveryAddressSchema = new mongoose.Schema({
   pincode: { type: Number },
   district: { type: String },
   city: { type: String },
-  address: { type: String},
+  address: { type: String },
   landmark: { type: String }, // Optional landmark for delivery address
 }, { timestamps: true });
 
@@ -32,7 +32,7 @@ const companyDetailsSchema = new mongoose.Schema({
   isCompanyEmailVerified: { type: Boolean, default: false }, // New field for company email verification
   companyPhone: { type: String },
   companyGstNumber: { type: String },
-  experience: { type: Number , default: 0 }, // Experience in years
+  experience: { type: Number, default: 0 }, // Experience in years
 });
 
 const UserSchema = new mongoose.Schema(
@@ -51,7 +51,7 @@ const UserSchema = new mongoose.Schema(
     companyDetails: companyDetailsSchema, // Use the company details schema with updated address structure
     role: { type: String, enum: ['Realtor', 'Product Seller', 'Professionals', 'Home Owner'], default: 'Home Owner' },
     type: { type: String },
-    token: { type : String },
+    token: { type: String },
     followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     premium: {
@@ -68,8 +68,15 @@ const UserSchema = new mongoose.Schema(
       affiliateSpecificField: { type: String },
     },
     deliveryAddresses: [deliveryAddressSchema],
-    blockedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], // Array of blocked user IDs
-
+    blockedUsers: {
+      type: [
+        {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User',
+        },
+      ],
+      default: [],
+    },
   },
   { timestamps: true } // Enable timestamps here
 );
