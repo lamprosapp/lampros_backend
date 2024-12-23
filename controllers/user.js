@@ -21,12 +21,12 @@ export const verifyOtp = async (req, res) => {
   try {
     const { phoneNumber, otp } = req.body;
     const response = await verifyOtpAndLogin(phoneNumber, otp);
-    
+
     // Generate JWT token
     const user = await User.findOne({ phoneNumber });
     const token = generateToken(user._id);
 
-    res.status(200).json({ message: response.message, token ,role: response?.role });
+    res.status(200).json({ message: response.message, token, role: response?.role });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -35,17 +35,17 @@ export const verifyOtp = async (req, res) => {
 export const deleteAccount = async (req, res) => {
   try {
     const userId = req.user;
-      // Delete the user document
-      await User.findByIdAndDelete(userId)
+    // Delete the user document
+    await User.findByIdAndDelete(userId)
 
-      // Delete all ProProjects created by the user
-      await ProProject.deleteMany({ createdBy: userId })
-  
-      // Delete all Products created by the user
-      await Product.deleteMany({ createdBy: userId })
-  
+    // Delete all ProProjects created by the user
+    await ProProject.deleteMany({ createdBy: userId })
 
-    res.status(200).json({  message: 'Account and all associated data deleted successfully.' });
+    // Delete all Products created by the user
+    await Product.deleteMany({ createdBy: userId })
+
+
+    res.status(200).json({ message: 'Account and all associated data deleted successfully.' });
   } catch (error) {
     console.error('Error deleting account:', error);
     res.status(500).json({ message: 'Failed to delete account. Please try again later.' });
@@ -85,9 +85,9 @@ export const completeBasic = async (req, res) => {
 
 export const update = async (req, res) => {
   try {
-    const { 
-      fname, lname, profileImage, role, type, email, 
-      companyDetails, address, age, gender, token 
+    const {
+      fname, lname, profileImage, role, type, email,
+      companyDetails, address, age, gender, token
     } = req.body;
 
     // Helper functions for specific checks
@@ -109,40 +109,40 @@ export const update = async (req, res) => {
       console.log(`Merging field - Existing: ${existing}, New: ${newField}, Merged: ${mergedValue}`);
       return mergedValue;
     };
-// Merge and validate company details (including companyAddress)
-const updatedCompanyDetails = {
-  companyName: mergeField(existingUser.companyDetails?.companyName, companyDetails?.companyName, isNonEmptyString),
-  companyEmail: mergeField(existingUser.companyDetails?.companyEmail, companyDetails?.companyEmail, isValidEmail),
-  companyPhone: mergeField(existingUser.companyDetails?.companyPhone, companyDetails?.companyPhone, isNonEmptyString),
-  companyGstNumber: mergeField(existingUser.companyDetails?.companyGstNumber, companyDetails?.companyGstNumber, isNonEmptyString),
-  experience: mergeField(existingUser.companyDetails?.experience, companyDetails?.experience, isValidNumber),
-  companyAddress: {
-    place: mergeField(existingUser.companyDetails?.companyAddress?.place, companyDetails?.companyAddress?.place, isNonEmptyString),
-    pincode: mergeField(existingUser.companyDetails?.companyAddress?.pincode, companyDetails?.companyAddress?.pincode, isValidNumber),
-  }
-};
+    // Merge and validate company details (including companyAddress)
+    const updatedCompanyDetails = {
+      companyName: mergeField(existingUser.companyDetails?.companyName, companyDetails?.companyName, isNonEmptyString),
+      companyEmail: mergeField(existingUser.companyDetails?.companyEmail, companyDetails?.companyEmail, isValidEmail),
+      companyPhone: mergeField(existingUser.companyDetails?.companyPhone, companyDetails?.companyPhone, isNonEmptyString),
+      companyGstNumber: mergeField(existingUser.companyDetails?.companyGstNumber, companyDetails?.companyGstNumber, isNonEmptyString),
+      experience: mergeField(existingUser.companyDetails?.experience, companyDetails?.experience, isValidNumber),
+      companyAddress: {
+        place: mergeField(existingUser.companyDetails?.companyAddress?.place, companyDetails?.companyAddress?.place, isNonEmptyString),
+        pincode: mergeField(existingUser.companyDetails?.companyAddress?.pincode, companyDetails?.companyAddress?.pincode, isValidNumber),
+      }
+    };
 
-console.log("Updated Company Details:", updatedCompanyDetails);
+    console.log("Updated Company Details:", updatedCompanyDetails);
 
-// Include updated fields in the update object
-const updatedFields = {
-  ...(isNonEmptyString(fname) && { fname }),
-  ...(isNonEmptyString(lname) && { lname }),
-  profileImage: profileImage && profileImage !== "" ? profileImage : existingUser.profileImage,
-  ...(isNonEmptyString(role) && { role }),
-  ...(isNonEmptyString(type) && { type }),
-  ...(isValidEmail(email) && { email }),
-  ...(companyDetails && { companyDetails: updatedCompanyDetails }), // Use deep-merged object
-  ...(address && { address }),
-  ...(isValidNumber(age) && { age }),
-  ...(isNonEmptyString(gender) && { gender }),
-  ...(isNonEmptyString(token) && { token })
-};
+    // Include updated fields in the update object
+    const updatedFields = {
+      ...(isNonEmptyString(fname) && { fname }),
+      ...(isNonEmptyString(lname) && { lname }),
+      profileImage: profileImage && profileImage !== "" ? profileImage : existingUser.profileImage,
+      ...(isNonEmptyString(role) && { role }),
+      ...(isNonEmptyString(type) && { type }),
+      ...(isValidEmail(email) && { email }),
+      ...(companyDetails && { companyDetails: updatedCompanyDetails }), // Use deep-merged object
+      ...(address && { address }),
+      ...(isValidNumber(age) && { age }),
+      ...(isNonEmptyString(gender) && { gender }),
+      ...(isNonEmptyString(token) && { token })
+    };
 
-console.log("Updated Fields to Save:", updatedFields);
+    console.log("Updated Fields to Save:", updatedFields);
 
-// Update user details using req.user.id
-const user = await User.findByIdAndUpdate(req.user, { $set: updatedFields }, { new: true });
+    // Update user details using req.user.id
+    const user = await User.findByIdAndUpdate(req.user, { $set: updatedFields }, { new: true });
 
 
     if (!user) {
@@ -176,7 +176,7 @@ export const completeRegistration = async (req, res) => {
     if (!isNotEmpty(role)) emptyFields.push('role');
     if (!isNotEmpty(email)) emptyFields.push('email');
     if (!isNotEmpty(address)) emptyFields.push('address');
-    if (!isNotEmpty(couponCode) || couponCode !== 'OCT2024') return res.status(400).json({ message: 'Invalid Coupon Code' });  
+    if (!isNotEmpty(couponCode) || couponCode !== 'OCT2024') return res.status(400).json({ message: 'Invalid Coupon Code' });
 
     // If any required fields are empty, return an error response
     if (emptyFields.length > 0) {
@@ -218,11 +218,11 @@ export const completeRegistration = async (req, res) => {
     // await sendSmsvia2fact(phoneNumber,`*Welcome to Lampros!*
 
     // Thank you for joining the Lampros family. You’re now one step closer to bringing your dream home to life! Explore a wide range of home designs, top-quality products, expert consultations, and connect with trusted professionals—all in one place.
-    
+
     // Feel free to start exploring the app, and if you have any questions or need assistance, we’re here to help.
-    
+
     // Welcome aboard, and happy homebuilding!
-    
+
     // *Team Lampros*
     // India’s First Virtual Buildmart`)
 
@@ -385,7 +385,7 @@ export const filterUsersWithProjectsOrProducts = async (req, res) => {
 export const blockUser = async (req, res) => {
   try {
     const { userIdToBlock } = req.body; // ID of the user to block
-    const userId = req.user._id; // ID of the current logged-in user (assumes authentication middleware)
+    const userId = req?.user; // ID of the current logged-in user (assumes authentication middleware)
 
     // Check if the user exists
     const userToBlock = await User.findById(userIdToBlock);
@@ -393,13 +393,19 @@ export const blockUser = async (req, res) => {
       return res.status(404).json({ message: 'User to block not found.' });
     }
 
+    // Check if the user is trying to block themselves
+    if (userId === userIdToBlock) {
+      return res.status(400).json({ message: 'You cannot block yourself.' });
+    }
+
     // Update the blockedUsers array
     const user = await User.findByIdAndUpdate(
       userId,
       { $addToSet: { blockedUsers: userIdToBlock } }, // Add to set to avoid duplicates
       { new: true }
-    );
+    ).populate('blockedUsers');
 
+    // Respond with the updated list of blocked users
     res.status(200).json({ message: 'User blocked successfully', blockedUsers: user.blockedUsers });
   } catch (error) {
     res.status(500).json({ message: 'Failed to block user', error: error.message });
@@ -410,14 +416,30 @@ export const blockUser = async (req, res) => {
 export const unblockUser = async (req, res) => {
   try {
     const { userIdToUnblock } = req.body; // ID of the user to unblock
-    const userId = req.user._id; // ID of the current logged-in user (assumes authentication middleware)
+    const userId = req?.user; // ID of the current logged-in user (assumes authentication middleware)
+    // Check if the user exists
+    const userToUnblock = await User.findById(userIdToUnblock);
+    if (!userToUnblock) {
+      return res.status(404).json({ message: 'User to unblock not found.' });
+    }
+
+    // Check if the user is trying to block themselves
+    if (userId === userIdToUnblock) {
+      return res.status(400).json({ message: 'You cannot unblock yourself.' });
+    }
+
+    // Check if the user is not blocking the user to unblock
+    const cuser = await User.findById(userId);
+    if (!cuser.blockedUsers.includes(userIdToUnblock)) {
+      return res.status(400).json({ message: 'User is not in the blocked list.' });
+    }
 
     // Update the blockedUsers array
     const user = await User.findByIdAndUpdate(
       userId,
       { $pull: { blockedUsers: userIdToUnblock } }, // Remove from the array
       { new: true }
-    );
+    ).populate('blockedUsers');
 
     res.status(200).json({ message: 'User unblocked successfully', blockedUsers: user.blockedUsers });
   } catch (error) {
