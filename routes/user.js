@@ -20,8 +20,8 @@ router.put('/update', protect, update);
 router.get('/protected-route', protect, getProfile);
 router.get('/user-filter', conditionalProtect, filterUsersWithProjectsOrProducts);
 router.delete('/delete', protect, deleteAccount)
-router.delete('/block', protect, blockUser)
-router.delete('/unblock', protect, unblockUser)
+router.post('/block', protect, blockUser)
+router.post('/unblock', protect, unblockUser)
 
 
 
