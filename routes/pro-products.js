@@ -1,15 +1,15 @@
 import express from 'express';
-import { 
-  addProduct, 
-  listAllProducts, 
-  listUserProducts, 
-  filterProducts, 
-  searchProducts, 
-  updateProduct, 
-  listAllProductsByIds, 
+import {
+  addProduct,
+  listAllProducts,
+  listUserProducts,
+  filterProducts,
+  searchProducts,
+  updateProduct,
+  listAllProductsByIds,
   deleteProduct
 } from '../controllers/pro-products.js';
-import { protect } from '../middlewares/protect.js'; 
+import { protect } from '../middlewares/protect.js';
 
 // Initialize the router
 const router = express.Router();
