@@ -145,23 +145,12 @@ export const listAllProductsByIds = async (req, res) => {
     // Add search filter if provided
     if (search) filter.name = { $regex: search, $options: 'i' };
 
-    // Get the current logged-in user's ID
-    const userId = req.user._id;
-
-    // Fetch the current logged-in user's details to get their blockedUsers list
-    const user = await User.findById(userId).select('blockedUsers');
-    const blockedUsers = user.blockedUsers;
-
     // Fetch products by individual IDs using Product.findById
     let products = [];
     if (ids && Array.isArray(ids) && ids.length > 0) {
       const productPromises = ids.map(id => ProProduct.findById(id).populate('createdBy', '-password').populate('brand').lean());
       products = await Promise.all(productPromises);
     }
-
-    // Filter out products created by blocked users
-    products = products.filter(product => product && !blockedUsers.includes(product.createdBy._id.toString()));
-
 
     // Apply additional filtering on the fetched products
     if (brand) {
@@ -220,12 +209,13 @@ export const listAllProducts = async (req, res) => {
     if (brand) filter.brand = brand;
     if (search) filter.name = { $regex: search, $options: 'i' };
 
-    // Get the current logged-in user's ID
-    const userId = req.user._id;
+    const userId = req?.user;
+    const user = userId ? await User.findById(userId) : null;
+    const blockedUsers = user?.blockedUsers || [];
 
-    // Fetch the current logged-in user's details to get their blockedUsers list
-    const user = await User.findById(userId).select('blockedUsers');
-    const blockedUsers = user.blockedUsers;
+    if (blockedUsers.length > 0) {
+      filter.createdBy = { $nin: blockedUsers };
+    }
 
     const options = {
       page,
@@ -236,20 +226,15 @@ export const listAllProducts = async (req, res) => {
         { path: 'brand' },
       ],
       lean: true,
-      leanWithId: false,
     };
 
     const result = await ProProduct.paginate(filter, options);
-
-    // Filter out products created by blocked users
-    const filteredProducts = result.docs.filter(product => !blockedUsers.includes(product.createdBy._id.toString()));
-
 
     res.status(200).json({
       currentPage: result.page,
       totalPages: result.totalPages,
       totalProducts: result.totalDocs,
-      products: filteredProducts,
+      products: result.docs,
     });
   } catch (error) {
     console.error('Error retrieving products:', error);
@@ -446,8 +431,13 @@ export const filterProducts = async (req, res) => {
     const sortOptions = { [sortByField]: sortOrder };
 
     // Fetch the current logged-in user's details to get their blockedUsers list
-    const currentUser = await User.findById(req.user).select('blockedUsers');
-    const blockedUsers = currentUser.blockedUsers;
+    const userId = req?.user;
+    const user = userId ? await User.findById(userId) : null;
+    const blockedUsers = user?.blockedUsers || [];
+
+    if (blockedUsers.length > 0) {
+      query['createdBy'] = { $nin: blockedUsers };
+    }
 
     // Fetch products and total count
     const productsPromise = ProProduct.find(query)
@@ -461,10 +451,6 @@ export const filterProducts = async (req, res) => {
     const countPromise = ProProduct.countDocuments(query).exec();
 
     const [products, total] = await Promise.all([productsPromise, countPromise]);
-
-    // Filter out products created by blocked users
-    const filteredProducts = products.filter(product => !blockedUsers.includes(product.createdBy._id.toString()));
-
 
     const totalPages = Math.ceil(total / limit);
 
@@ -482,7 +468,7 @@ export const filterProducts = async (req, res) => {
       currentPage: page,
       totalPages,
       totalProducts: total,
-      products: filteredProducts,
+      products,
     });
   } catch (error) {
     res.status(500).json({ message: 'Failed to retrieve products', error: error.message });
@@ -515,10 +501,6 @@ export const listUserProducts = async (req, res) => {
     // Make sure req.user is converted to ObjectId if needed
     const userId = mongoose.Types.ObjectId(req.user);
 
-    // Fetch the current logged-in user's details to get their blockedUsers list
-    const currentUser = await User.findById(userId).select('blockedUsers');
-    const blockedUsers = currentUser.blockedUsers;
-
     // Fetch products created by the authenticated user
     const productsPromise = ProProduct.find({ createdBy: userId })
       .populate('brand')
@@ -530,12 +512,6 @@ export const listUserProducts = async (req, res) => {
     const countPromise = ProProduct.countDocuments({ createdBy: userId });
 
     const [products, total] = await Promise.all([productsPromise, countPromise]);
-
-
-    // Filter out products created by blocked users
-    const filteredProducts = products.filter(product => !blockedUsers.includes(product.createdBy._id.toString()));
-
-
 
     const totalPages = Math.ceil(total / limit);
 
@@ -553,7 +529,7 @@ export const listUserProducts = async (req, res) => {
       currentPage: page,
       totalPages,
       totalProducts: total,
-      products: filteredProducts,
+      products,
     });
   } catch (error) {
     console.error('Error retrieving user products:', error);
@@ -740,8 +716,13 @@ export const searchProducts = async (req, res) => {
 
 
     // Fetch the current logged-in user's details to get their blockedUsers list
-    const currentUser = await User.findById(req.user).select('blockedUsers');
-    const blockedUsers = currentUser.blockedUsers;
+    const userId = req?.user;
+    const user = userId ? await User.findById(userId) : null;
+    const blockedUsers = user?.blockedUsers || [];
+
+    if (blockedUsers.length > 0) {
+      queryObject['createdBy'] = { $nin: blockedUsers };
+    }
 
     // Fetch products with pagination and populate brands
     const productsPromise = ProProduct.find(queryObject)
@@ -757,11 +738,6 @@ export const searchProducts = async (req, res) => {
 
     // Execute both queries in parallel
     const [products, total] = await Promise.all([productsPromise, countPromise]);
-
-
-    // Filter out products created by blocked users
-    const filteredProducts = products.filter(product => !blockedUsers.includes(product.createdBy._id.toString()));
-
 
     // Calculate total pages
     const totalPages = Math.ceil(total / limit);
@@ -796,7 +772,7 @@ export const searchProducts = async (req, res) => {
       currentPage: page,
       totalPages,
       totalProducts: filteredProducts.length,
-      products: filteredProducts,
+      products,
     });
   } catch (error) {
     res.status(500).json({ message: 'Failed to search products', error: error.message });
