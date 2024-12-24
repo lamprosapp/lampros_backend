@@ -311,7 +311,7 @@ export const filterUsersWithProjectsOrProducts = async (req, res) => {
     const skip = (parsedPage - 1) * parsedLimit;
 
     // Build a filter object for MongoDB
-    const filter = {};
+    let filter = {};
 
     if (role) {
       const roleArray = role.split(','); // Split by comma for multiple roles
