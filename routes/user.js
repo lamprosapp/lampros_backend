@@ -23,7 +23,11 @@ router.delete('/delete', protect, deleteAccount)
 router.post('/block', protect, blockUser)
 router.post('/unblock', protect, unblockUser)
 
+// Route to flag/report a user  (POST /api/user/flag)
+router.post('/flag', protect,  flagUser);
 
+// Route to clear flag/report of a project  (POST /api/user/clearFlag)
+router.post('/clearFlag', protect,  clearUserFlags);
 
 // Image upload route
 router.post('/upload-image', upload.single('image'), uploadImage);
