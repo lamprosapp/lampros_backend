@@ -331,6 +331,7 @@ export const filterUsersWithProjectsOrProducts = async (req, res) => {
     // Build a filter object for MongoDB
     filter = {
       _id: { $nin: blockedUsers }, // Exclude blocked users
+      isViolated: false,
     };
 
     // Fetch users based on the role and type with pagination
