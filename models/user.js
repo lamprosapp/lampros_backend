@@ -77,6 +77,15 @@ const UserSchema = new mongoose.Schema(
       ],
       default: [],
     },
+    flags: [
+        {
+          reason: { type: String },
+          flaggedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+          timestamp: { type: Date, default: Date.now }
+        }
+      ],
+      flagCount: { type: Number, default: 0 }, // Tracks the total number of flags
+      isViolated: { type: Boolean, default: false }, // Set to true if the flag count reaches 5
   },
   { timestamps: true } // Enable timestamps here
 );
