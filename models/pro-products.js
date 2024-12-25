@@ -35,7 +35,20 @@ const technicalDetailsSchema = new mongoose.Schema({
   specialFeatures: { type: String }, // Special features
   productModelNumber: { type: String }, // Product model number
   asinNumber: { type: String },   // ASIN number
-  productCareInstructions: { type: String } // Product care instructions
+  productCareInstructions: { type: String }, // Product care instructions
+  loadCapacity: { type: String }, // Load Capacity
+  mountType: { type: String }, // Mount type
+  handleType: { type: String }, // Handle type
+  noOfHandles: { type: Number }, // Number of handles
+  hoseLength: { type: String }, // Hose length
+  storageCapacity: { type: String }, // Storage capacity
+  storageLayout: { type: String }, // Storage layout
+  doorType: { type: String }, // Door type
+  seatingCapacity: { type: Number }, // Seating capacity
+  frameMaterial: { type: String }, // Frame material
+  suspensionType: { type: String }, // Suspension type
+  size: { type: String }, // Size
+  storageOptions: { type: String }, // Storage options
 });
 
 
@@ -84,19 +97,6 @@ const productSchema = new mongoose.Schema({
   },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   updatedAt: { type: Date, default: Date.now }, // Automatically set the update date 
-  loadCapacity: { type: String }, // Load Capacity
-  mountType: { type: String }, // Mount type
-  handleType: { type: String }, // Handle type
-  noOfHandles: { type: Number }, // Number of handles
-  hoseLength: { type: String }, // Hose length
-  storageCapacity: { type: String }, // Storage capacity
-  storageLayout: { type: String }, // Storage layout
-  doorType: { type: String }, // Door type
-  seatingCapacity: { type: Number }, // Seating capacity
-  frameMaterial: { type: String }, // Frame material
-  suspensionType: { type: String }, // Suspension type
-  size: { type: String }, // Size
-  storageOptions: { type: [String] }, // Storage options (Array of strings)
 }, { timestamps: true });
 
 
