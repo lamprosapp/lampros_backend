@@ -238,7 +238,7 @@ export const getProfile = async (req, res) => {
     const userId = req.user;
 
     // Fetch the user profile from the database
-    const user = await User.findById(userId).select('-password -__v'); // Exclude password and other unnecessary fields
+    const user = await User.findById(userId).select('-password -__v').populate('blockedUsers'); // Exclude password and other unnecessary fields
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
