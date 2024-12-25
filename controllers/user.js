@@ -456,3 +456,64 @@ export const unblockUser = async (req, res) => {
     res.status(500).json({ message: 'Failed to unblock user', error: error.message });
   }
 };
+
+
+export const flagUser = async (req, res) => {
+  try {
+    const { userId, reason } = req.body; // The project ID and the reason for flagging
+    const flaggedBy = req?.user || 'guest'; // ID of the user who is flagging the project
+
+    // Find the project to flag
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    // Add a new flag to the project's flags array
+    const flag = {
+      reason,
+      flaggedBy,
+      timestamp: new Date(),
+    };
+
+    // Add the flag and increment the flagCount
+    user.flags.push(flag);
+    user.flagCount += 1;
+
+    // Check if flagCount reaches 5 and mark the user as violated
+    if (user.flagCount >= 5) {
+      user.isViolated = true;
+    }
+
+    // Save the updated user
+    await user.save();
+
+    res.status(200).json({ message: 'User flagged successfully', user });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to flag user', error: error.message });
+  }
+};
+
+export const clearFlag = async (req, res) => {
+  try {
+    const { userId } = req.body; // The project ID whose flags should be cleared
+
+    // Find the project to clear flags from
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    // Clear the flags array and reset flagCount and isViolated
+    user.flags = [];
+    user.flagCount = 0;
+    user.isViolated = false;
+
+    // Save the updated user
+    await user.save();
+
+    res.status(200).json({ message: 'Flags cleared successfully', user });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to clear flags', error: error.message });
+  }
+};
