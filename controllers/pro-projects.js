@@ -253,11 +253,11 @@ export const listAllProjects = async (req, res) => {
     const blockedUsers = user?.blockedUsers || [];
 
     if (blockedUsers.length > 0) {
-      // query['createdBy'] = { $nin: blockedUsers };
+      query['createdBy'] = { $nin: blockedUsers };
     }
 
     // Add a filter to exclude violated projects (isViolated: true)
-    // query['isViolated'] = { $ne: true };
+    query['isViolated'] = { $ne: true };
     // Fetch projects with pagination, sorting, and populate fields
     const projectsPromise = ProProject.find(query)
       .populate('createdBy', '-password') // Populate 'createdBy' and exclude 'password'
@@ -267,7 +267,7 @@ export const listAllProjects = async (req, res) => {
       .exec();
 
     // Get total count of projects
-    const countPromise = ProProject.countDocuments().exec();
+    const countPromise = ProProject.countDocuments(query).exec();
 
     // Execute both queries in parallel
     const [projects, total] = await Promise.all([projectsPromise, countPromise]);
