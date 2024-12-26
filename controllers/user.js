@@ -495,7 +495,7 @@ export const flagUser = async (req, res) => {
   }
 };
 
-export const clearFlag = async (req, res) => {
+export const clearUserFlags = async (req, res) => {
   try {
     const { userId } = req.body; // The project ID whose flags should be cleared
 
