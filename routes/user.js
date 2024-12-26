@@ -1,5 +1,5 @@
 import express from 'express';
-import { requestOtp, verifyOtp, completeBasic, update, completeRegistration, getProfile, uploadImage, uploadImages, filterUsersWithProjectsOrProducts, deleteAccount, blockUser, unblockUser } from '../controllers/user.js';
+import { requestOtp, verifyOtp, completeBasic, update, completeRegistration, getProfile, uploadImage, uploadImages, filterUsersWithProjectsOrProducts, flagUser, clearUserFlags, deleteAccount, blockUser, unblockUser } from '../controllers/user.js';
 import upload from '../config/multerConfig.js';
 import { protect } from '../middlewares/protect.js';
 
