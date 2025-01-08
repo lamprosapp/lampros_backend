@@ -33,6 +33,7 @@ const companyDetailsSchema = new mongoose.Schema({
   companyPhone: { type: String },
   companyGstNumber: { type: String },
   experience: { type: Number, default: 0 }, // Experience in years
+  Bio: { type: String },
 });
 
 const UserSchema = new mongoose.Schema(
