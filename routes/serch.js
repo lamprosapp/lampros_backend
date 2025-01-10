@@ -1,6 +1,7 @@
 // routes/searchRoutes.js
 import express from 'express';
 import { fuzzySearchProductSellers  } from '../controllers/product-seller-search.js';
+import { fuzzySearchAll } from '../controllers/serch.js';
 import { protect } from '../middlewares/protect.js';
 
 const router = express.Router();
