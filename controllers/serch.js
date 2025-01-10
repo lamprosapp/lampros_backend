@@ -312,6 +312,7 @@ export const fuzzySearchAll = async (req, res) => {
                 products: productsTotal,
                 projects: proProjectsTotal,
                 users: usersTotal,
+                productSellers: productSellersTotal,
             },
         });
     } catch (error) {
