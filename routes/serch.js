@@ -1,6 +1,6 @@
 // routes/searchRoutes.js
 import express from 'express';
-import { fuzzySearchAll } from '../controllers/serch.js';
+import { fuzzySearchProductSellers  } from '../controllers/product-seller-search.js';
 import { protect } from '../middlewares/protect.js';
 
 const router = express.Router();
@@ -15,5 +15,8 @@ const conditionalProtect = (req, res, next) => {
 
 // Fuzzy search route with letter support
 router.get('/search',conditionalProtect, fuzzySearchAll);
+
+// Fuzzy search route with letter support for Product Seller only
+router.get('/search/product-seller',conditionalProtect, fuzzySearchProductSellers);
 
 export default router;
