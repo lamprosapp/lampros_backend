@@ -112,17 +112,20 @@ export const fuzzySearchAll = async (req, res) => {
             }),
         ]);
 
+        // Filter out Product Sellers
+        const filteredUsers = users.filter(user => user.role !== 'Product Seller');
+
         // If there are users, fetch their associated projects or products
         let usersWithDetails = [];
-        if (users.length > 0) {
+        if (filteredUsers.length > 0) {
             // Collect user IDs based on roles
-            const realtorOrProfIds = users
+            const realtorOrProfIds = filteredUsers
                 .filter(user => user.role === 'Realtor' || user.role === 'Professionals')
                 .map(user => user._id);
-            const productSellerIds = users
-                .filter(user => user.role === 'Product Seller')
-                .map(user => user._id);
-
+            //const productSellerIds = users
+            //    .filter(user => user.role === 'Product Seller')
+            //    .map(user => user._id);
+            
             // Fetch all relevant projects and products in bulk with pagination
             const [projects, projectsTotal, productsList, productsListTotal] = await Promise.all([
                 ProProject.find({
@@ -133,8 +136,8 @@ export const fuzzySearchAll = async (req, res) => {
                     createdBy: { $in: realtorOrProfIds },
                     isViolated: { $ne: true } // Exclude violated projects
                 }),
-                Product.find({ createdBy: { $in: productSellerIds } }).skip(skip).limit(parsedLimit).populate('createdBy').lean(),
-                Product.countDocuments({ createdBy: { $in: productSellerIds } }),
+            //   Product.find({ createdBy: { $in: productSellerIds } }).skip(skip).limit(parsedLimit).populate('createdBy').lean(),
+            //    Product.countDocuments({ createdBy: { $in: productSellerIds } }),
             ]);
 
             // Map projects and products to their respective users
@@ -151,27 +154,28 @@ export const fuzzySearchAll = async (req, res) => {
                 }
             });
 
-            const productsByUser = productSellerIds.reduce((acc, userId) => {
-                acc[userId] = [];
-                return acc;
-            }, {});
+            //const productsByUser = productSellerIds.reduce((acc, userId) => {
+            //    acc[userId] = [];
+            //    return acc;
+            //}, {});
 
-            productsList.forEach(product => {
-                // Use product.createdBy._id for mapping
-                const userId = product.createdBy._id.toString();
-                if (productsByUser[userId]) {
-                    productsByUser[userId].push(product);
-                }
-            });
+            //productsList.forEach(product => {
+            //   // Use product.createdBy._id for mapping
+            //    const userId = product.createdBy._id.toString();
+            //    if (productsByUser[userId]) {
+            //        productsByUser[userId].push(product);
+            //    }
+            //});
 
             // Attach projects or products to each user based on their role
-            usersWithDetails = users.map(user => {
+            usersWithDetails = filteredUsers.map(user => {
                 const userWithDetails = { ...user };
                 if (user.role === 'Realtor' || user.role === 'Professionals') {
                     userWithDetails.projects = projectsByUser[user._id.toString()] || [];
-                } else if (user.role === 'Product Seller') {
-                    userWithDetails.products = productsByUser[user._id.toString()] || [];
-                }
+                } 
+                //else if (user.role === 'Product Seller') {
+                //    userWithDetails.products = productsByUser[user._id.toString()] || [];
+                //}
                 return userWithDetails;
             });
 
