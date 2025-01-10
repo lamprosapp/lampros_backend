@@ -181,6 +181,90 @@ export const fuzzySearchAll = async (req, res) => {
 
         }
 
+        // Fetch Product Seller users with pagination
+        const [productSellers, productSellersTotal] = await Promise.all([
+            User.find({
+                $and: [
+                    { role: 'Product Seller' },
+                    { isViolated: { $ne: true } }, // Exclude users with isViolated set to true
+                    { _id: { $nin: blockedUsers } }, // Exclude blocked users
+                    {
+                        $or: [
+                            { fname: regex },
+                            { lname: regex },
+                            { 'companyDetails.companyName': regex },
+                            { 'companyDetails.companyAddress.place': regex },
+                            { 'companyDetails.companyPhone': regex },
+                            { 'companyDetails.companyEmail': regex },
+                            { 'companyDetails.companyGstNumber': regex },
+                        ]
+                    }
+                ]
+            }).skip(skip).limit(parsedLimit).lean(),
+            User.countDocuments({
+                $and: [
+                    { role: 'Product Seller' },
+                    { isViolated: { $ne: true } },
+                    { _id: { $nin: blockedUsers } },
+                    {
+                        $or: [
+                            { fname: regex },
+                            { lname: regex },
+                            { 'companyDetails.companyName': regex },
+                            { 'companyDetails.companyAddress.place': regex },
+                            { 'companyDetails.companyPhone': regex },
+                            { 'companyDetails.companyEmail': regex },
+                            { 'companyDetails.companyGstNumber': regex },
+                        ]
+                    }
+                ]
+            }),
+        ]);
+
+        // If there are Product Seller users, fetch their products
+        let productSellersWithDetails = [];
+        if (productSellers.length > 0) {
+            const productSellerIds = productSellers.map(user => user._id);
+
+            // Fetch products associated with Product Seller users
+            const [products, productsTotal] = await Promise.all([
+                Product.find({
+                    createdBy: { $in: productSellerIds },
+                    $or: [
+                        { name: regex },
+                        { about: regex }
+                    ]
+                }).populate('brand').populate('createdBy').skip(skip).limit(parsedLimit).lean(),
+                Product.countDocuments({
+                    createdBy: { $in: productSellerIds },
+                    $or: [
+                        { name: regex },
+                        { about: regex }
+                    ]
+                }),
+            ]);
+
+            // Map products to their respective users
+            const productsByUser = productSellerIds.reduce((acc, userId) => {
+                acc[userId] = [];
+                return acc;
+            }, {});
+
+            products.forEach(product => {
+                const userId = product.createdBy._id.toString();
+                if (productsByUser[userId]) {
+                    productsByUser[userId].push(product);
+                }
+            });
+
+            // Attach products to each Product Seller user
+            productSellersWithDetails = productSellers.map(user => {
+                const userWithDetails = { ...user };
+                userWithDetails.products = productsByUser[user._id.toString()] || [];
+                return userWithDetails;
+            });
+        }
+
         // Combine results with pagination info
         res.status(200).json({
             success: true,
@@ -214,6 +298,12 @@ export const fuzzySearchAll = async (req, res) => {
                     currentPage: parsedPage,
                     totalPages: Math.ceil(usersTotal / parsedLimit),
                     totalResults: usersTotal
+                },
+                productSellers: {
+                    data: productSellersWithDetails,
+                    currentPage: parsedPage,
+                    totalPages: Math.ceil(productSellersTotal / parsedLimit),
+                    totalResults: productSellersTotal
                 },
             },
             totalResults: {
