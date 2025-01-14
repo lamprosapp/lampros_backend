@@ -1,4 +1,4 @@
-import admin from '../config/firebase';
+import admin from '../config/firebase.js';
 import dotenv from 'dotenv';
 import Notification from '../models/notification.js'; // Import your Mongoose model
 
