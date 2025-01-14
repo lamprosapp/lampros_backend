@@ -5,7 +5,9 @@ import corsMiddleware from './middlewares/corsMiddleware.js';
 import config from './config/serverConfig.js';
 import errorHandler from './middlewares/errorHandler.js';
 import { protect } from './middlewares/protect.js'; 
-
+import { admin } from 'firebase-admin';
+// const admin = require('firebase-admin');
+const serviceAccount = require('./serviceAccountKey.json');
 
 
 import ro_user from './routes/user.js'
@@ -41,6 +43,11 @@ app.use(express.urlencoded({ extended: true }));
 app.use(corsMiddleware);
 // app.use(requestLoggerMiddleware);
 
+
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+});
 
 // Use OTP routes
 app.use('/api/user', ro_user);
