@@ -5,9 +5,7 @@ import corsMiddleware from './middlewares/corsMiddleware.js';
 import config from './config/serverConfig.js';
 import errorHandler from './middlewares/errorHandler.js';
 import { protect } from './middlewares/protect.js'; 
-import { admin } from 'firebase-admin';
-// const admin = require('firebase-admin');
-const serviceAccount = require('./serviceAccountKey.json');
+import admin from 'firebase-admin';
 
 
 import ro_user from './routes/user.js'
@@ -45,9 +43,19 @@ app.use(corsMiddleware);
 
 
 
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-});
+ admin.initializeApp({
+        credential: admin.credential.cert({
+          project_id: process.env.FIREBASE_PROJECT_ID,
+          private_key_id: process.env.FIREBASE_PRIVATE_KEY_ID,
+          private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'), // Replace escaped newlines
+          client_email: process.env.FIREBASE_CLIENT_EMAIL,
+          client_id: process.env.FIREBASE_CLIENT_ID,
+          auth_uri: process.env.FIREBASE_AUTH_URI,
+          token_uri: process.env.FIREBASE_TOKEN_URI,
+          auth_provider_x509_cert_url: process.env.FIREBASE_AUTH_PROVIDER_X509_CERT_URL,
+          client_x509_cert_url: process.env.FIREBASE_CLIENT_X509_CERT_URL,
+        }),
+      });
 
 // Use OTP routes
 app.use('/api/user', ro_user);
