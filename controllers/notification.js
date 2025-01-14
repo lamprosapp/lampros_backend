@@ -31,7 +31,7 @@ const initializeFirebase = () => {
 };
 
 
-initializeFirebase();
+//initializeFirebase();
 
 // Send notification to a single device
 export const sendNotificationToDevice = async (token, title, body, userId) => {
