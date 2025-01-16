@@ -7,6 +7,7 @@ import Brand from '../models/brand.js';
 import Category from '../models/catogory.js';
 import { sendSmsvia2fact } from '../services/smsService.js';
 // import admin from '../config/firebase.js'
+const admin = require('./firebase-config');
 
 export const requestOtp = async (req, res) => {
   try {
@@ -18,21 +19,50 @@ export const requestOtp = async (req, res) => {
   }
 };
 
-
 export const verifyOtp = async (req, res) => {
   try {
-    const { phoneNumber, otp } = req.body;
-    const response = await verifyOtpAndLogin(phoneNumber, otp);
+    const { idToken } = req.body;
 
-    // Generate JWT token
-    const user = await User.findOne({ phoneNumber });
+    // Verify the ID token with Firebase
+    const decodedToken = await admin.auth().verifyIdToken(idToken);
+
+    const phoneNumber = decodedToken.phone_number;
+
+    // Check if the user exists in your database
+    let user = await User.findOne({ phoneNumber });
+
+    if (!user) {
+      // If user doesn't exist, you can optionally create one
+      user = await User.create({ phoneNumber });
+    }
+
+    // Generate JWT token for your application
     const token = generateToken(user._id);
 
-    res.status(200).json({ message: response.message, token, role: response?.role });
+    res.status(200).json({
+      message: 'OTP verified successfully',
+      token,
+      role: user.role || 'user', // Adjust based on your User schema
+    });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
 };
+
+// export const verifyOtp = async (req, res) => {
+//   try {
+//     const { phoneNumber, otp } = req.body;
+//     const response = await verifyOtpAndLogin(phoneNumber, otp);
+
+//     // Generate JWT token
+//     const user = await User.findOne({ phoneNumber });
+//     const token = generateToken(user._id);
+
+//     res.status(200).json({ message: response.message, token, role: response?.role });
+//   } catch (error) {
+//     res.status(400).json({ message: error.message });
+//   }
+// };
 
 export const deleteAccount = async (req, res) => {
   try {
