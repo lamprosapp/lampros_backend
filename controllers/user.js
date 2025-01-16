@@ -7,7 +7,7 @@ import Brand from '../models/brand.js';
 import Category from '../models/catogory.js';
 import { sendSmsvia2fact } from '../services/smsService.js';
 // import admin from '../config/firebase.js'
-const admin = require('./firebase-config');
+const admin = require('../config/firebase-config');
 
 export const requestOtp = async (req, res) => {
   try {
