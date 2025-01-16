@@ -1,4 +1,4 @@
-import admin from 'firebase-admin';
+import admin from '../config/firebase-config.js';
 import dotenv from 'dotenv';
 import Notification from '../models/notification.js'; // Import your Mongoose model
 
@@ -31,7 +31,7 @@ const initializeFirebase = () => {
 };
 
 
-initializeFirebase();
+// initializeFirebase();
 
 // Send notification to a single device
 export const sendNotificationToDevice = async (token, title, body, userId) => {
