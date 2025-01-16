@@ -23,12 +23,12 @@ export const verifyOtp = async (req, res) => {
 
   try {
     let decodedToken;
-    try {
-      decodedToken = await admin.auth().verifyIdToken(idToken);
-    } catch (firebaseError) {
-      console.error('Firebase token verification failed:', firebaseError);
-      return res.status(401).json({ message: 'Invalid or expired token' });
-    }
+    // try {
+    //   decodedToken = await admin.auth().verifyIdToken(idToken);
+    // } catch (firebaseError) {
+    //   console.error('Firebase token verification failed:', firebaseError);
+    //   return res.status(401).json({ message: 'Invalid or expired token' });
+    // }
 
     if (otp) {
       const response = await verifyOtpAndLogin(phoneNumber, otp);
