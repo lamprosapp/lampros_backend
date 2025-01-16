@@ -7,45 +7,45 @@ const vonage = new Vonage({
   apiSecret: process.env.VONAGE_API_SECRET,
 });
 
-// export const sendSmsvia2fact = (to, message, next) => {
-//   return new Promise((resolve, reject) => {
-//     vonage.sms.send({ to, from: process.env.VONAGE_PHONE_NUMBER, text: message }, (err, responseData) => {
-//       if (err) {
-//         logger.error(err);
-//         reject(err);
-//       } else {
-//         resolve(responseData)
-//       }
-//     });
-//   });
-// };
-
 export const sendSmsvia2fact = (to, message, next) => {
-  return new Promise(async (resolve, reject) => {
-    try {
-      // Construct the API URL
-      const apiUrl = `https://four-difficult-fuchsia.glitch.me/send`;
-
-      // Prepare the request body
-      const requestBody = {
-        to,
-        message,
-      };
-
-      // Send the POST request using axios
-      const response = await axios.post(apiUrl, requestBody, {
-        headers: {
-          'Content-Type': 'application/json', // Ensure correct headers are set
-        },
-      });
-
-      resolve(response.data); // Resolve with the response data
-    } catch (err) {
-      logger.error(err);
-      reject(err); // Reject in case of an error
-    }
+  return new Promise((resolve, reject) => {
+    vonage.sms.send({ to, from: process.env.VONAGE_PHONE_NUMBER, text: message }, (err, responseData) => {
+      if (err) {
+        logger.error(err);
+        reject(err);
+      } else {
+        resolve(responseData)
+      }
+    });
   });
 };
+
+// export const sendSmsvia2fact = (to, message, next) => {
+//   return new Promise(async (resolve, reject) => {
+//     try {
+//       // Construct the API URL
+//       const apiUrl = `https://four-difficult-fuchsia.glitch.me/send`;
+
+//       // Prepare the request body
+//       const requestBody = {
+//         to,
+//         message,
+//       };
+
+//       // Send the POST request using axios
+//       const response = await axios.post(apiUrl, requestBody, {
+//         headers: {
+//           'Content-Type': 'application/json', // Ensure correct headers are set
+//         },
+//       });
+
+//       resolve(response.data); // Resolve with the response data
+//     } catch (err) {
+//       logger.error(err);
+//       reject(err); // Reject in case of an error
+//     }
+//   });
+// };
 
 
 // export const sendSmsvia2fact = async (phoneNumber, otp) => {
