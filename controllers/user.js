@@ -20,23 +20,23 @@ export const requestOtp = async (req, res) => {
 
 export const verifyOtp = async (req, res) => {
   try {
-    const { idToken } = req.body;
+    const { idToken, phoneNumber, otp } = req.body;
 
     // Verify the ID token with Firebase
     const decodedToken = await admin.auth().verifyIdToken(idToken);
 
-    const phoneNumber = decodedToken.phone_number;
+    const phoneNumber1 = decodedToken.phone_number;
 
     // Check if the user exists in your database
-    let user = await User.findOne({ phoneNumber });
+    let user = await User.findOne({ phoneNumber1 });
 
     if (!user) {
       // If user doesn't exist, you can optionally create one
-      user = await User.create({ phoneNumber });
+      user = await User.create({ phoneNumber1 });
     }
 
     // Generate JWT token for your application
-    const token = generateToken(user._id);
+    const token = generateToken(user.phoneNumber);
 
     res.status(200).json({
       message: 'OTP verified successfully',
