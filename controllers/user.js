@@ -21,11 +21,13 @@ export const requestOtp = async (req, res) => {
 export const verifyOtp = async (req, res) => {
   try {
     const { idToken, phoneNumber, otp } = req.body;
-
+console.log(idToken+ phoneNumber+ otp)
     // Verify the ID token with Firebase
     const decodedToken = await admin.auth().verifyIdToken(idToken);
+console.log(decodedToken)
 
     const phoneNumber1 = decodedToken.phone_number;
+console.log(phoneNumber1)
 
     // Check if the user exists in your database
     let user = await User.findOne({ phoneNumber1 });
