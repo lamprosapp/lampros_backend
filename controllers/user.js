@@ -18,41 +18,19 @@ export const requestOtp = async (req, res) => {
   }
 };
 
+
 export const verifyOtp = async (req, res) => {
-  const { idToken, phoneNumber, otp } = req.body;
-
   try {
-    let decodedToken;
-    console.log("id Token: " + idToken);
-    // try {
-    //   decodedToken = await admin.auth().verifyIdToken(idToken);
-    // } catch (firebaseError) {
-    //   console.error('Firebase token verification failed:', firebaseError);
-    //   return res.status(401).json({ message: 'Invalid or expired token' });
-    // }
+    const { phoneNumber, otp } = req.body;
+    const response = await verifyOtpAndLogin(phoneNumber, otp);
 
-    if (otp) {
-      const response = await verifyOtpAndLogin(phoneNumber, otp);
-      if (!response.success) {
-        throw new Error('OTP verification failed');
-      }
-    }
-
-    let user = await User.findOne({ phoneNumber });
-    if (!user) {
-      return res.status(404).json({ message: 'Failed to find user' });
-    }
-
+    // Generate JWT token
+    const user = await User.findOne({ phoneNumber });
     const token = generateToken(user._id);
 
-    res.status(200).json({
-      message: 'Authentication successful',
-      token,
-      role: user.role || 'user',
-    });
+    res.status(200).json({ message: response.message, token, role: response?.role });
   } catch (error) {
-    console.error('Authentication error:', error);
-    res.status(400).json({ message: error instanceof Error ? error.message : 'An unknown error occurred' });
+    res.status(400).json({ message: error.message });
   }
 };
 
