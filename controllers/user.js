@@ -23,6 +23,7 @@ export const verifyOtp = async (req, res) => {
 
   try {
     let decodedToken;
+    console.log("id Token: " + idToken);
     // try {
     //   decodedToken = await admin.auth().verifyIdToken(idToken);
     // } catch (firebaseError) {
