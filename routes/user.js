@@ -1,5 +1,5 @@
 import express from 'express';
-import { requestOtp, verifyOtp, completeBasic, update, completeRegistration, getProfile, uploadImage, uploadImages, filterUsersWithProjectsOrProducts, flagUser, clearUserFlags, deleteAccount, blockUser, unblockUser } from '../controllers/user.js';
+import { requestOtp, verifyOtp, testVerifyOtp, completeBasic, update, completeRegistration, getProfile, uploadImage, uploadImages, filterUsersWithProjectsOrProducts, flagUser, clearUserFlags, deleteAccount, blockUser, unblockUser } from '../controllers/user.js';
 import upload from '../config/multerConfig.js';
 import { protect } from '../middlewares/protect.js';
 
@@ -14,6 +14,7 @@ const conditionalProtect = (req, res, next) => {
 
 router.post('/request-otp', requestOtp);
 router.post('/verify-otp', verifyOtp);
+router.post('/test/verify-otp', testVerifyOtp);
 router.post('/basic-registration', completeBasic);
 router.post('/complete-registration', completeRegistration);
 router.put('/update', protect, update);
