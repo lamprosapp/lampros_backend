@@ -35,20 +35,20 @@ console.log("idToken+ phoneNumber+ otp"+idToken+ phoneNumber+ otp )
 console.log("phoneNumber1: "+phoneNumber1)
 
     // Check if the user exists in your database
-    let user = await User.findOne({ phoneNumber });
+    // let user = await User.findOne({ phoneNumber });
 
-    if (!user) {
-      // If user doesn't exist, you can optionally create one
-      user = await User.create({ phoneNumber });
-    }
+    // if (!user) {
+    //   // If user doesn't exist, you can optionally create one
+    //   user = await User.create({ phoneNumber });
+    // }
 
     // Generate JWT token for your application
-    const token = generateToken(user.phoneNumber);
+    const token = generateToken(phoneNumber);
 
     res.status(200).json({
       message: 'OTP verified successfully',
       token,
-      role: user.role || 'user', // Adjust based on your User schema
+      role: 'user', // Adjust based on your User schema
     });
   } catch (error) {
     res.status(400).json({ message: error.message });
