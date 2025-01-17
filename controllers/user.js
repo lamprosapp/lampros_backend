@@ -21,34 +21,45 @@ export const requestOtp = async (req, res) => {
 export const verifyOtp = async (req, res) => {
   try {
     const { idToken, phoneNumber, otp } = req.body;
-console.log("idToken+ phoneNumber+ otp"+idToken+ phoneNumber+ otp )
+    console.log("idToken+ phoneNumber+ otp" + idToken + phoneNumber + otp)
     // Verify the ID token with Firebase
     const decodedToken = await admin.auth().verifyIdToken(idToken);
-    if (decodedToken){
-      console.log("decodedToken: "+decodedToken)
-    }else{
-            console.log("error decodedToken: "+decodedToken)
+    if (decodedToken) {
+      console.log("decodedToken: " + decodedToken)
+    } else {
+      console.log("error decodedToken: " + decodedToken)
 
     }
 
-    const phoneNumber1 = decodedToken.phone_number;
-console.log("phoneNumber1: "+phoneNumber1)
+    // const phoneNumber1 = decodedToken.phone_number;
+    // console.log("phoneNumber1: " + phoneNumber1)
 
-    // Check if the user exists in your database
-    // let user = await User.findOne({ phoneNumber });
+    let user = await User.findOne({ phoneNumber });
+    let message;
 
-    // if (!user) {
-    //   // If user doesn't exist, you can optionally create one
-    //   user = await User.create({ phoneNumber });
-    // }
+    if (!user) {
+      // Create a new user if none exists
+      user = new User({ phoneNumber });
+      await user.save();
+      message = { message: 'User created, please complete registration.' };
+    }
+
+    // Check if essential details are present
+    const isCompleteProfile = user.fname && user.address;
+
+    if (!isCompleteProfile) {
+      message = { message: 'User exists, but registration incomplete. Please complete your details.' };
+    } else {
+      message = { message: 'User logged in successfully.' };
+    }
 
     // Generate JWT token for your application
-    const token = generateToken(phoneNumber);
+    const token = generateToken(user._id);
 
     res.status(200).json({
-      message: 'OTP verified successfully',
+      message: message.message,
       token,
-      role: 'user', // Adjust based on your User schema
+      role: user?.role || 'user', // Adjust based on your User schema
     });
   } catch (error) {
     res.status(400).json({ message: error.message });
