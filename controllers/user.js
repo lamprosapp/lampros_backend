@@ -18,68 +18,68 @@ export const requestOtp = async (req, res) => {
   }
 };
 
-export const verifyOtp = async (req, res) => {
-  try {
-    const { idToken, phoneNumber, otp } = req.body;
-    console.log("idToken+ phoneNumber+ otp" + idToken + phoneNumber + otp)
-    // Verify the ID token with Firebase
-    const decodedToken = await admin.auth().verifyIdToken(idToken);
-    if (decodedToken) {
-      console.log("decodedToken: " + decodedToken)
-    } else {
-      console.log("error decodedToken: " + decodedToken)
-
-    }
-
-    // const phoneNumber1 = decodedToken.phone_number;
-    // console.log("phoneNumber1: " + phoneNumber1)
-
-    let user = await User.findOne({ phoneNumber });
-    let message;
-
-    if (!user) {
-      // Create a new user if none exists
-      user = new User({ phoneNumber });
-      await user.save();
-      message = { message: 'User created, please complete registration.' };
-    }
-
-    // Check if essential details are present
-    const isCompleteProfile = user.fname && user.address;
-
-    if (!isCompleteProfile) {
-      message = { message: 'User exists, but registration incomplete. Please complete your details.' };
-    } else {
-      message = { message: 'User logged in successfully.' };
-    }
-
-    // Generate JWT token for your application
-    const token = generateToken(user._id);
-
-    res.status(200).json({
-      message: message.message,
-      token,
-      role: user?.role || 'user', // Adjust based on your User schema
-    });
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-};
-
 // export const verifyOtp = async (req, res) => {
 //   try {
-//     const { phoneNumber, otp } = req.body;
-//     const response = await verifyOtpAndLogin(phoneNumber, otp);
+//     const { idToken, phoneNumber, otp } = req.body;
+//     console.log("idToken+ phoneNumber+ otp" + idToken + phoneNumber + otp)
+//     // Verify the ID token with Firebase
+//     const decodedToken = await admin.auth().verifyIdToken(idToken);
+//     if (decodedToken) {
+//       console.log("decodedToken: " + decodedToken)
+//     } else {
+//       console.log("error decodedToken: " + decodedToken)
 
-//     // Generate JWT token
-//     const user = await User.findOne({ phoneNumber });
+//     }
+
+//     // const phoneNumber1 = decodedToken.phone_number;
+//     // console.log("phoneNumber1: " + phoneNumber1)
+
+//     let user = await User.findOne({ phoneNumber });
+//     let message;
+
+//     if (!user) {
+//       // Create a new user if none exists
+//       user = new User({ phoneNumber });
+//       await user.save();
+//       message = { message: 'User created, please complete registration.' };
+//     }
+
+//     // Check if essential details are present
+//     const isCompleteProfile = user.fname && user.address;
+
+//     if (!isCompleteProfile) {
+//       message = { message: 'User exists, but registration incomplete. Please complete your details.' };
+//     } else {
+//       message = { message: 'User logged in successfully.' };
+//     }
+
+//     // Generate JWT token for your application
 //     const token = generateToken(user._id);
 
-//     res.status(200).json({ message: response.message, token, role: response?.role });
+//     res.status(200).json({
+//       message: message.message,
+//       token,
+//       role: user?.role || 'user', // Adjust based on your User schema
+//     });
 //   } catch (error) {
 //     res.status(400).json({ message: error.message });
 //   }
 // };
+
+export const verifyOtp = async (req, res) => {
+  try {
+    const { phoneNumber, otp } = req.body;
+    const response = await verifyOtpAndLogin(phoneNumber, otp);
+
+    // Generate JWT token
+    const user = await User.findOne({ phoneNumber });
+    const token = generateToken(user._id);
+
+    res.status(200).json({ message: response.message, token, role: response?.role });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
 
 export const deleteAccount = async (req, res) => {
   try {
