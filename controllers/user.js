@@ -396,23 +396,27 @@ export const filterUsersWithProjectsOrProducts = async (req, res) => {
 
     // Prepare an array to store users with their projects/products
     const usersWithProjectsOrProducts = await Promise.all(
-      users.map(async (user) => {
-        let userWithDetails = user.toObject(); // Convert Mongoose doc to plain object
+  users.map(async (user) => {
+    let userWithDetails = user.toObject(); // Convert Mongoose doc to plain object
 
-        // Depending on the role, fetch related projects or products
-        if (user.role === 'Realtor' || user.role === 'Professionals') {
-          // Fetch ProProjects where createdBy matches the user's _id
-          const projects = await ProProject.find({ createdBy: user._id }).populate('createdBy').exec();
-          userWithDetails.projects = projects; // Add projects to the user object
-        } else if (user.role === 'Product Seller') {
-          // Fetch Products where createdBy matches the user's _id
-          const products = await Product.find({ createdBy: user._id }).populate('createdBy').exec();
-          userWithDetails.products = products; // Add products to the user object
-        }
+    // Depending on the role, fetch related projects or products
+    if (user.role === 'Realtor' || user.role === 'Professionals') {
+      // Fetch ProProjects where createdBy matches the user's _id
+      const projects = await ProProject.find({ createdBy: user._id }).populate('createdBy').exec();
+      userWithDetails.projects = projects || []; // Default to an empty array if null
+    } else if (user.role === 'Product Seller') {
+      // Fetch Products where createdBy matches the user's _id
+      const products = await Product.find({ createdBy: user._id }).populate('createdBy').exec();
+      userWithDetails.products = products || []; // Default to an empty array if null
+    } else {
+      // Default empty arrays for roles that don't match
+      userWithDetails.projects = [];
+      userWithDetails.products = [];
+    }
 
-        return userWithDetails;
-      })
-    );
+    return userWithDetails;
+  })
+);
 
     // Calculate total pages
     const totalPages = Math.ceil(total / parsedLimit);
