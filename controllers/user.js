@@ -406,7 +406,7 @@ export const filterUsersWithProjectsOrProducts = async (req, res) => {
       userWithDetails.projects = projects || []; // Default to an empty array if null
     } else if (user.role === 'Product Seller') {
       // Fetch Products where createdBy matches the user's _id
-      const products = await Product.find({ createdBy: user._id }).populate('createdBy').exec();
+      const products = await Product.find({ createdBy: user._id }).populate('createdBy').populate('brand').exec();
       userWithDetails.products = products || []; // Default to an empty array if null
     } else {
       // Default empty arrays for roles that don't match
