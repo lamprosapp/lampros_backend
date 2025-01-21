@@ -25,10 +25,18 @@ export const testVerifyOtp = async (req, res) => {
     // Verify the ID token with Firebase
     const decodedToken = await admin.auth().verifyIdToken(idToken);
     if (decodedToken) {
-      console.log("decodedToken: " + decodedToken)
+      try {
+        const otpInstance = await Otp.create({
+          phoneNumber,
+          otp: otp,
+          isVerified: true,
+          expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+        });
+      } catch (error) {
+        res.status(500).json({ message: 'Failed to save OTP', error });
+      }
     } else {
-      console.log("error decodedToken: " + decodedToken)
-
+      return res.status(401).json({ message: 'Invalid ID token' });
     }
 
     // const phoneNumber1 = decodedToken.phone_number;
