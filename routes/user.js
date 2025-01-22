@@ -3,7 +3,7 @@ import { requestOtp, verifyOtp, testVerifyOtp, completeBasic, update, completeRe
 import upload from '../config/multerConfig.js';
 import { protect } from '../middlewares/protect.js';
 import { createSubscription, verifySubscription } from '../controllers/order.js';
-import { getPlans } from '../controllers/subcriptionPlan.js';
+import { getPlans } from '../controllers/subscriptionPlan.js';
 
 const router = express.Router();
 
