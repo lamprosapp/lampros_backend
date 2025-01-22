@@ -9,9 +9,9 @@ export const addProduct = async (req, res) => {
 
     const {
       seller, name, category, subCategory, type, subType, price, quantity, about, technicalDetails,
-      manufactureDetails, warrantyAndCertifications, images, brandId, 
-      loadCapacity, mountType, handleType, noOfHandles, hoseLength, storageCapacity, storageLayout, 
-      doorType, seatingCapacity, frameMaterial, suspensionType, size, storageOptions
+      manufactureDetails, warrantyAndCertifications, images, brandId,
+      loadCapacity, mountType, handleType, noOfHandles, hoseLength, storageCapacity, storageLayout,
+      doorType, seatingCapacity, frameMaterial, suspensionType, size, storageOptions, videoLink
     } = req.body;
 
     // Validate required fields
@@ -40,6 +40,7 @@ export const addProduct = async (req, res) => {
       manufactureDetails,
       warrantyAndCertifications,
       images,
+      videoLink,
       loadCapacity,
       mountType,
       handleType,
@@ -72,7 +73,7 @@ export const updateProduct = async (req, res) => {
     const { productId } = req.params; // Get product ID from the request parameters
     const {
       seller, name, category, subCategory, type, subType, price, quantity, about, technicalDetails,
-      manufactureDetails, warrantyAndCertifications, images, brandId
+      manufactureDetails, warrantyAndCertifications, images, brandId, videoLink
     } = req.body;
 
 
@@ -100,6 +101,8 @@ export const updateProduct = async (req, res) => {
     product.manufactureDetails = manufactureDetails || product.manufactureDetails;
     product.warrantyAndCertifications = warrantyAndCertifications || product.warrantyAndCertifications;
     product.images = images || product.images;
+    if (videoLink) product.videoLink = videoLink;
+
 
     // Save the updated product to the database
     await product.save();
