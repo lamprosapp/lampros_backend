@@ -87,6 +87,7 @@ const productSchema = new mongoose.Schema({
   manufactureDetails: manufactureDetailsSchema, // Manufacture details
   warrantyAndCertifications: warrantyAndCertificationsSchema, // Warranty and certifications
   images: [productImagesSchema], // Array of images
+  videoLink: { type: String },
   averageRating: {
     type: Number,
     default: 0,
