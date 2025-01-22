@@ -62,7 +62,9 @@ const UserSchema = new mongoose.Schema(
         enum: ['basic', 'standard', 'premium', 'elite'],
         default: 'basic',
       },
-      duration: { type: String, default: '6 Months' }, // Set default duration to 'basic'
+      duration: { type: String, default: null }, // '1 Month', '6 Months', etc.
+      startedAt: { type: Date, default: null }, // Timestamp for the start of the subscription
+      expiresAt: { type: Date, default: null }, // Timestamp for when the subscription ends
     },
     extraRoleFields: {
       professionalSpecificField: { type: String },
