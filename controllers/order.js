@@ -1,10 +1,20 @@
 import Order from '../models/order.js';
 import User from '../models/user.js';
 import Product from '../models/pro-products.js';
+import Razorpay from 'razorpay';
+import crypto from 'crypto';
+import SubscriptionPlan from '../models/subscriptionPlanModel.js';
 
 // Middleware to ensure user is authenticated
 // Assume `protect` middleware sets `req.user` to the logged-in user's ID
 // Example: req.user = logged-in user's ObjectId;
+
+// Initialize Razorpay instance
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET,
+});
+
 
 // Create an order
 export const createOrder = async (req, res) => {
@@ -33,7 +43,16 @@ export const createOrder = async (req, res) => {
     }
 
     // Calculate total amount
-    const totalAmount = product.price * quantity;
+    const totalAmount = product.price * quantity * 100;
+
+
+    const receipt = `receipt_${Math.random().toString(36).substring(2)}`;
+    const razorpayOrder = await razorpay.orders.create({
+      amount: totalAmount,
+      currency: 'INR',
+      receipt,
+    });
+
 
     // Create the new order
     const newOrder = new Order({
@@ -44,12 +63,146 @@ export const createOrder = async (req, res) => {
         price: product.price,
         quantity,
       },
-      totalAmount,
+      totalAmount: totalAmount / 100, // Store amount in rupees for consistency
+      orderStatus: 'pending',
+      paymentMethod: 'Online Payment', // Default to Razorpay online payment
+      razorpayOrderId: razorpayOrder.id,
     });
 
     await newOrder.save();
 
-    res.status(201).json({ success: true, data: newOrder });
+    res.status(201).json({
+      success: true,
+      message: 'Order created successfully',
+      order: newOrder,
+      razorpayDetails: razorpayOrder,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+};
+
+export const createSubscriptionOrder = async (amount, currency = 'INR') => {
+  try {
+    const options = {
+      amount: amount * 100,
+      currency,
+      receipt: `order_rcptid_${Date.now()}`,
+    };
+
+    const order = await razorpay.orders.create(options);
+    return order;
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to create Razorpay order', error: error.message });
+  }
+};
+
+export const createSubscription = async (req, res) => {
+  try {
+    const { duration } = req.body;
+
+    // Validate request
+    if (!duration) {
+      return res.status(400).json({ message: 'Invalid subscription details' });
+    }
+
+    const plan = await SubscriptionPlan.findOne({ duration, isActive: true });
+
+    if (!plan) {
+      return res.status(404).json({ message: 'Subscription plan not found' });
+    }
+
+    const { price } = plan;
+
+    // Create an order using Razorpay
+    const order = await createSubscriptionOrder(price);
+
+    // Respond with the order details
+    res.status(201).json({ success: true, order });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+
+
+export const verifySubscription = async (req, res) => {
+  try {
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, duration } = req.body;
+
+    // Validate Razorpay signature
+    const hmac = crypto.createHmac('sha256', process.env.RAZORPAY_KEY_SECRET);
+    hmac.update(`${razorpay_order_id}|${razorpay_payment_id}`);
+    const generatedSignature = hmac.digest('hex');
+
+    if (generatedSignature !== razorpay_signature) {
+      return res.status(400).json({ success: false, message: 'Invalid payment signature' });
+    }
+
+    // Fetch the subscription plan from the database
+    const plan = await SubscriptionPlan.findOne({ duration, isActive: true });
+    if (!plan) {
+      return res.status(404).json({ success: false, message: 'Subscription plan not found' });
+    }
+
+    // Calculate expiration date based on the plan duration
+    const now = new Date();
+    const expiresAt = new Date(now);
+
+    if (duration.includes('Month')) expiresAt.setMonth(expiresAt.getMonth() + parseInt(duration));
+    if (duration.includes('Year')) expiresAt.setFullYear(expiresAt.getFullYear() + parseInt(duration));
+
+    // Update user's premium status
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      {
+        premium: {
+          isPremium: true,
+          category: plan.type,
+          duration: plan.duration,
+          startedAt: now,
+          expiresAt,
+        },
+      },
+      { new: true }
+    );
+
+    res.status(200).json({ success: true, user });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+
+
+export const verifyPayment = async (req, res) => {
+  try {
+    const { razorpayOrderId, razorpayPaymentId, razorpaySignature } = req.body;
+
+    // Generate the expected signature
+    const expectedSignature = crypto
+      .createHmac('sha256', 'YOUR_RAZORPAY_SECRET')
+      .update(`${razorpayOrderId}|${razorpayPaymentId}`)
+      .digest('hex');
+
+    // Verify the signature
+    if (expectedSignature !== razorpaySignature) {
+      return res.status(400).json({ success: false, message: 'Invalid signature' });
+    }
+
+    // Update the order status in the database
+    const order = await Order.findOneAndUpdate(
+      { razorpayOrderId },
+      { orderStatus: 'paid', razorpayPaymentId },
+      { new: true }
+    );
+
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'Order not found' });
+    }
+
+    res.status(200).json({ success: true, message: 'Payment verified successfully', order });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: 'Server error', error: error.message });
@@ -93,7 +246,7 @@ export const getOrders = async (req, res) => {
       delete modifiedQuery.orderStatus; // Remove orderStatus
       return modifiedQuery;
     };
-    
+
 
     // Get total count for the current query
     const totalOrderCount = await Order.countDocuments(removeOrderStatusFromQuery(query));
@@ -125,7 +278,7 @@ export const getOrders = async (req, res) => {
         return acc;
       }, {})
     );
-    
+
 
     // Manually populate the delivery address
     const populatedOrders = await Promise.all(
@@ -200,7 +353,7 @@ export const getOrderById = async (req, res) => {
 export const updateOrder = async (req, res) => {
   try {
     const { orderId } = req.params;
-    const { quantity, orderStatus } = req.body;
+    const { quantity, orderStatus, reasonToCancel} = req.body;
 
     const order = await Order.findById(orderId).populate('product.productId');
     if (!order) {
@@ -217,6 +370,9 @@ export const updateOrder = async (req, res) => {
 
     if (orderStatus) {
       order.orderStatus = orderStatus;
+    }
+    if (reasonToCancel) {
+      order.reasonToCancel = reasonToCancel;
     }
 
     await order.save();
