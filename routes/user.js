@@ -2,6 +2,8 @@ import express from 'express';
 import { requestOtp, verifyOtp, testVerifyOtp, completeBasic, update, completeRegistration, getProfile, uploadImage, uploadImages, filterUsersWithProjectsOrProducts, flagUser, clearUserFlags, deleteAccount, blockUser, unblockUser } from '../controllers/user.js';
 import upload from '../config/multerConfig.js';
 import { protect } from '../middlewares/protect.js';
+import { createSubscription, verifySubscription } from '../controllers/order.js';
+import { getPlans } from '../controllers/subcriptionPlan.js';
 
 const router = express.Router();
 
@@ -18,6 +20,8 @@ router.post('/test/verify-otp', testVerifyOtp);
 router.post('/basic-registration', completeBasic);
 router.post('/complete-registration', completeRegistration);
 router.put('/update', protect, update);
+router.post('/subscription/create', createSubscription);
+router.get('/subscriptions/', getPlans);
 router.get('/protected-route', protect, getProfile);
 router.get('/user-filter', conditionalProtect, filterUsersWithProjectsOrProducts);
 router.delete('/delete', protect, deleteAccount)
