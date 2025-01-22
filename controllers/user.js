@@ -7,6 +7,8 @@ import Brand from '../models/brand.js';
 import Category from '../models/catogory.js';
 import { sendSmsvia2fact } from '../services/smsService.js';
 import admin from '../config/firebase-config.js'
+import Otp from '../models/otp.js';
+import DeletionLog from '../models/deletionLog.js';
 
 export const requestOtp = async (req, res) => {
   try {
@@ -92,6 +94,30 @@ export const verifyOtp = async (req, res) => {
 export const deleteAccount = async (req, res) => {
   try {
     const userId = req.user;
+
+    const { reasonToDelete } = req.body;
+
+    if (!reason) {
+      return res.status(400).json({ message: "Reason for deletion is required" });
+    }
+
+    // Find user before deletion
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+
+    await DeletionLog.create({
+      userId,
+      reason,
+      userDetails: {
+        phoneNumber: user.phoneNumber,
+        email: user.email,
+        createdAt: user.createdAt,
+      },
+    });
+
     // Delete the user document
     await User.findByIdAndDelete(userId)
 
@@ -144,7 +170,7 @@ export const update = async (req, res) => {
   try {
     const {
       fname, lname, profileImage, role, type, email,
-      companyDetails, address, age, gender, token
+      companyDetails, address, age, gender, token,
     } = req.body;
 
     // Helper functions for specific checks
@@ -176,7 +202,8 @@ export const update = async (req, res) => {
       companyAddress: {
         place: mergeField(existingUser.companyDetails?.companyAddress?.place, companyDetails?.companyAddress?.place, isNonEmptyString),
         pincode: mergeField(existingUser.companyDetails?.companyAddress?.pincode, companyDetails?.companyAddress?.pincode, isValidNumber),
-      }
+      },
+      bio: mergeField(existingUser.companyDetails?.bio, companyDetails?.bio, isNonEmptyString),
     };
 
     console.log("Updated Company Details:", updatedCompanyDetails);
@@ -221,9 +248,27 @@ export const update = async (req, res) => {
 
 export const completeRegistration = async (req, res) => {
   try {
-    const { phoneNumber, fname, lname, profileImage, role, type, email, companyDetails, address, couponCode, age, gender } = req.body;
+    const {
+      phoneNumber,
+      fname,
+      lname,
+      profileImage,
+      role,
+      type,
+      email,
+      companyDetails,
+      address,
+      couponCode,
+      age,
+      gender,
+      subscriptionType,
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature,
+    } = req.body;
 
     const isNotEmpty = (value) => value !== undefined && value !== null && value !== '';
+    const normalizedSubscriptionType = subscriptionType?.toLowerCase();
 
     // Array to track empty required fields
     const emptyFields = [];
@@ -233,7 +278,26 @@ export const completeRegistration = async (req, res) => {
     if (!isNotEmpty(role)) emptyFields.push('role');
     if (!isNotEmpty(email)) emptyFields.push('email');
     if (!isNotEmpty(address)) emptyFields.push('address');
-    if (!isNotEmpty(couponCode) || couponCode !== 'OCT2024') return res.status(400).json({ message: 'Invalid Coupon Code' });
+
+    // Check for required fields based on subscription type
+    if (normalizedSubscriptionType === 'free') {
+      if (!isNotEmpty(couponCode)) {
+        return res.status(400).json({ message: 'Invalid or missing coupon code' });
+      }
+    }
+    else if (['1 month', '6 months', '12 months'].includes(normalizedSubscriptionType)) {
+      // Validate Razorpay signature
+      const hmac = crypto.createHmac('sha256', process.env.RAZORPAY_KEY_SECRET);
+      hmac.update(`${razorpay_order_id}|${razorpay_payment_id}`);
+      const generatedSignature = hmac.digest('hex');
+
+      if (generatedSignature !== razorpay_signature) {
+        return res.status(400).json({ message: 'Invalid payment signature' });
+      }
+    }
+    else {
+      return res.status(400).json({ message: 'Invalid subscription type' });
+    }
 
     // If any required fields are empty, return an error response
     if (emptyFields.length > 0) {
@@ -243,7 +307,7 @@ export const completeRegistration = async (req, res) => {
       });
     }
 
-    // Proceed to build the updated fields object
+    // Build the updated fields object
     const updatedFields = {
       fname,
       lname,
@@ -259,7 +323,27 @@ export const completeRegistration = async (req, res) => {
       ...(isNotEmpty(address) && { address }),
     };
 
-    // Update user details
+    // Add premium subscription details if applicable
+    if (['1 month', '6 months', '12 months'].includes(normalizedSubscriptionType)) {
+      const now = new Date();
+      const expiresAt = new Date(now);
+
+      if (normalizedSubscriptionType === '1 month') expiresAt.setMonth(expiresAt.getMonth() + 1);
+      if (normalizedSubscriptionType === '6 months') expiresAt.setMonth(expiresAt.getMonth() + 6);
+      if (normalizedSubscriptionType === '12 months') expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+
+      updatedFields.premium = {
+        isPremium: true,
+        category: 'premium',
+        duration: normalizedSubscriptionType,
+        startedAt: now,
+        expiresAt,
+      };
+    } else {
+      updatedFields.premium = { isPremium: false };
+    }
+
+    // Update user details in the database
     const response = await updateUserDetails(phoneNumber, updatedFields);
 
     // Fetch the updated user to generate the token
@@ -272,22 +356,15 @@ export const completeRegistration = async (req, res) => {
     // Generate a token for the user
     const token = generateToken(user._id);
 
-    // await sendSmsvia2fact(phoneNumber,`*Welcome to Lampros!*
-
-    // Thank you for joining the Lampros family. You’re now one step closer to bringing your dream home to life! Explore a wide range of home designs, top-quality products, expert consultations, and connect with trusted professionals—all in one place.
-
-    // Feel free to start exploring the app, and if you have any questions or need assistance, we’re here to help.
-
-    // Welcome aboard, and happy homebuilding!
-
-    // *Team Lampros*
-    // India’s First Virtual Buildmart`)
+    // Optional: Send a welcome message via SMS
+    // await sendSmsvia2fact(phoneNumber, `Your welcome message here...`);
 
     res.status(200).json({ message: 'Registration complete', token });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
 };
+
 
 export const getProfile = async (req, res) => {
   try {
@@ -388,7 +465,7 @@ export const filterUsersWithProjectsOrProducts = async (req, res) => {
     // Build a filter object for MongoDB
     filter = {
       _id: { $nin: blockedUsers }, // Exclude blocked users
-      isViolated: {$ne: true},
+      isViolated: { $ne: true },
     };
 
     // Fetch users based on the role and type with pagination
@@ -404,27 +481,27 @@ export const filterUsersWithProjectsOrProducts = async (req, res) => {
 
     // Prepare an array to store users with their projects/products
     const usersWithProjectsOrProducts = await Promise.all(
-  users.map(async (user) => {
-    let userWithDetails = user.toObject(); // Convert Mongoose doc to plain object
+      users.map(async (user) => {
+        let userWithDetails = user.toObject(); // Convert Mongoose doc to plain object
 
-    // Depending on the role, fetch related projects or products
-    if (user.role === 'Realtor' || user.role === 'Professionals') {
-      // Fetch ProProjects where createdBy matches the user's _id
-      const projects = await ProProject.find({ createdBy: user._id }).populate('createdBy').exec();
-      userWithDetails.projects = projects || []; // Default to an empty array if null
-    } else if (user.role === 'Product Seller') {
-      // Fetch Products where createdBy matches the user's _id
-      const products = await Product.find({ createdBy: user._id }).populate('createdBy').populate('brand').exec();
-      userWithDetails.products = products || []; // Default to an empty array if null
-    } else {
-      // Default empty arrays for roles that don't match
-      userWithDetails.projects = [];
-      userWithDetails.products = [];
-    }
+        // Depending on the role, fetch related projects or products
+        if (user.role === 'Realtor' || user.role === 'Professionals') {
+          // Fetch ProProjects where createdBy matches the user's _id
+          const projects = await ProProject.find({ createdBy: user._id }).populate('createdBy').exec();
+          userWithDetails.projects = projects || []; // Default to an empty array if null
+        } else if (user.role === 'Product Seller') {
+          // Fetch Products where createdBy matches the user's _id
+          const products = await Product.find({ createdBy: user._id }).populate('createdBy').populate('brand').exec();
+          userWithDetails.products = products || []; // Default to an empty array if null
+        } else {
+          // Default empty arrays for roles that don't match
+          userWithDetails.projects = [];
+          userWithDetails.products = [];
+        }
 
-    return userWithDetails;
-  })
-);
+        return userWithDetails;
+      })
+    );
 
     // Calculate total pages
     const totalPages = Math.ceil(total / parsedLimit);
