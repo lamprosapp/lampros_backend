@@ -97,9 +97,9 @@ export const deleteAccount = async (req, res) => {
 
     const { reasonToDelete } = req.body;
 
-    if (!reason) {
-      return res.status(400).json({ message: "Reason for deletion is required" });
-    }
+    // if (!reason) {
+    //   return res.status(400).json({ message: "Reason for deletion is required" });
+    // }
 
     // Find user before deletion
     const user = await User.findById(userId);
@@ -108,15 +108,15 @@ export const deleteAccount = async (req, res) => {
     }
 
 
-    await DeletionLog.create({
-      userId,
-      reason,
-      userDetails: {
-        phoneNumber: user.phoneNumber,
-        email: user.email,
-        createdAt: user.createdAt,
-      },
-    });
+    // await DeletionLog.create({
+    //   userId,
+    //   reason,
+    //   userDetails: {
+    //     phoneNumber: user.phoneNumber,
+    //     email: user.email,
+    //     createdAt: user.createdAt,
+    //   },
+    // });
 
     // Delete the user document
     await User.findByIdAndDelete(userId)
