@@ -9,6 +9,7 @@ import { sendSmsvia2fact } from '../services/smsService.js';
 import admin from '../config/firebase-config.js'
 import Otp from '../models/otp.js';
 import DeletionLog from '../models/deletionLog.js';
+import crypto from 'crypto';
 
 export const requestOtp = async (req, res) => {
   try {
