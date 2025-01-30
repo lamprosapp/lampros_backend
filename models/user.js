@@ -9,7 +9,7 @@ const deliveryAddressSchema = new mongoose.Schema({
   pincode: { type: Number },
   district: { type: String },
   city: { type: String },
-  address: { type: String},
+  address: { type: String },
   landmark: { type: String }, // Optional landmark for delivery address
 }, { timestamps: true });
 
@@ -32,7 +32,8 @@ const companyDetailsSchema = new mongoose.Schema({
   isCompanyEmailVerified: { type: Boolean, default: false }, // New field for company email verification
   companyPhone: { type: String },
   companyGstNumber: { type: String },
-  experience: { type: Number , default: 0 }, // Experience in years
+  experience: { type: Number, default: 0 }, // Experience in years
+  bio: { type: String },
 });
 
 const UserSchema = new mongoose.Schema(
@@ -51,7 +52,7 @@ const UserSchema = new mongoose.Schema(
     companyDetails: companyDetailsSchema, // Use the company details schema with updated address structure
     role: { type: String, enum: ['Realtor', 'Product Seller', 'Professionals', 'Home Owner'], default: 'Home Owner' },
     type: { type: String },
-    token: { type : String },
+    token: { type: String },
     followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     premium: {
@@ -61,13 +62,33 @@ const UserSchema = new mongoose.Schema(
         enum: ['basic', 'standard', 'premium', 'elite'],
         default: 'basic',
       },
-      duration: { type: String, default: '6 Months' }, // Set default duration to 'basic'
+      duration: { type: String, default: null }, // '1 Month', '6 Months', etc.
+      startedAt: { type: Date, default: null }, // Timestamp for the start of the subscription
+      expiresAt: { type: Date, default: null }, // Timestamp for when the subscription ends
     },
     extraRoleFields: {
       professionalSpecificField: { type: String },
       affiliateSpecificField: { type: String },
     },
     deliveryAddresses: [deliveryAddressSchema],
+    blockedUsers: {
+      type: [
+        {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User',
+        },
+      ],
+      default: [],
+    },
+    flags: [
+        {
+          reason: { type: String },
+          flaggedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+          timestamp: { type: Date, default: Date.now }
+        }
+      ],
+      flagCount: { type: Number, default: 0 }, // Tracks the total number of flags
+      isViolated: { type: Boolean, default: false }, // Set to true if the flag count reaches 5
   },
   { timestamps: true } // Enable timestamps here
 );
