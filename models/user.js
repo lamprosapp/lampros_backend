@@ -38,6 +38,7 @@ const companyDetailsSchema = new mongoose.Schema({
 
 const UserSchema = new mongoose.Schema(
   {
+
     customId: { type: String }, // Custom unique ID field
     password: { type: String },
     email: { type: String },
@@ -81,14 +82,28 @@ const UserSchema = new mongoose.Schema(
       default: [],
     },
     flags: [
-        {
-          reason: { type: String },
-          flaggedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-          timestamp: { type: Date, default: Date.now }
+      {
+        reason: { type: String },
+        flaggedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        timestamp: { type: Date, default: Date.now }
+      }
+    ],
+    flagCount: { type: Number, default: 0 }, // Tracks the total number of flags
+    isViolated: { type: Boolean, default: false }, // Set to true if the flag count reaches 5
+    referral: {
+      type: {
+        marketing: {
+          employeeName: { type: String },
+          employeeCode: { type: String }
+        },
+        affiliate: {
+          firmName: { type: String },
+          registeredMobileNumber: { type: String }
         }
-      ],
-      flagCount: { type: Number, default: 0 }, // Tracks the total number of flags
-      isViolated: { type: Boolean, default: false }, // Set to true if the flag count reaches 5
+      },
+      default: {}
+    }
+
   },
   { timestamps: true } // Enable timestamps here
 );
