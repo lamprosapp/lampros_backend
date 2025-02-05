@@ -114,7 +114,6 @@ export const deleteAccount = async (req, res) => {
       reason: reasonToDelete,
       userDetails: {
         phoneNumber: user.phoneNumber,
-        email: user.email,
         createdAt: user.createdAt,
       },
     });
