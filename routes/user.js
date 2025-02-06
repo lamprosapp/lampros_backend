@@ -1,5 +1,5 @@
 import express from 'express';
-import { requestOtp, verifyOtp, testVerifyOtp, completeBasic, update, completeRegistration, getProfile, uploadImage, uploadImages, filterUsersWithProjectsOrProducts, flagUser, clearUserFlags, deleteAccount, blockUser, unblockUser } from '../controllers/user.js';
+import { requestOtp, verifyOtp, testVerifyOtp, completeBasic, update, completeRegistration, getProfile, getUserById, uploadImage, uploadImages, filterUsersWithProjectsOrProducts, flagUser, clearUserFlags, deleteAccount, blockUser, unblockUser } from '../controllers/user.js';
 import upload from '../config/multerConfig.js';
 import { protect } from '../middlewares/protect.js';
 import { createSubscription, verifySubscription } from '../controllers/order.js';
@@ -24,6 +24,7 @@ router.post('/subscription/create', createSubscription);
 router.get('/subscriptions/', getPlans);
 router.get('/protected-route', protect, getProfile);
 router.get('/user-filter', conditionalProtect, filterUsersWithProjectsOrProducts);
+router.get('/get', conditionalProtect, getUserById);
 router.delete('/delete', protect, deleteAccount)
 router.post('/block', protect, blockUser)
 router.post('/unblock', protect, unblockUser)
