@@ -261,6 +261,7 @@ export const completeRegistration = async (req, res) => {
       couponCode,
       age,
       gender,
+      referral,
       subscriptionType,
       razorpay_order_id,
       razorpay_payment_id,
@@ -323,6 +324,24 @@ export const completeRegistration = async (req, res) => {
       ...(isNotEmpty(address) && { address }),
     };
 
+    if (referral) {
+      if (referral.marketing) {
+        updatedFields.referral = {
+          marketing: {
+            employeeName: referral.marketing.employeeName || '',
+            employeeCode: referral.marketing.employeeCode || '',
+          },
+        };
+      } else if (referral.affiliate) {
+        updatedFields.referral = {
+          affiliate: {
+            firmName: referral.affiliate.firmName || '',
+            registeredMobileNumber: referral.affiliate.registeredMobileNumber || '',
+          },
+        };
+      }
+    }
+
     // Add premium subscription details if applicable
     if (['1 month', '6 months', '12 months'].includes(normalizedSubscriptionType)) {
       const now = new Date();
@@ -381,6 +400,54 @@ export const getProfile = async (req, res) => {
     res.status(200).json(user);
   } catch (error) {
     res.status(400).json({ message: error.message });
+  }
+};
+
+
+
+export const getUserById = async (req, res) => {
+  try {
+    const { userId } = req.query;
+
+    if (!userId) {
+      return res.status(400).json({ message: 'User ID is required.' });
+    }
+
+    // Fetch the user by ID, excluding the password
+    const user = await User.findById(userId).select('-password -__v').populate('blockedUsers').exec(); // Exclude password and other unnecessary fields
+
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    // Convert Mongoose document to a plain JavaScript object
+    let userWithDetails = user.toObject();
+
+    // Depending on the role, fetch related projects or products
+    if (user.role === 'Realtor' || user.role === 'Professionals') {
+      // Fetch ProProjects where createdBy matches the user's _id
+      const projects = await ProProject.find({ createdBy: user._id })
+        .populate('createdBy')
+        .exec();
+      userWithDetails.projects = projects || [];
+    } else if (user.role === 'Product Seller') {
+      // Fetch Products where createdBy matches the user's _id
+      const products = await Product.find({ createdBy: user._id })
+        .populate('createdBy')
+        .populate('brand')
+        .exec();
+      userWithDetails.products = products || [];
+    } else {
+      userWithDetails.projects = [];
+      userWithDetails.products = [];
+    }
+
+    // Return the user details with projects/products
+    res.status(200).json(userWithDetails);
+  } catch (error) {
+    console.error('Error retrieving user details:', error);
+    res.status(500).json({ message: 'Failed to retrieve user details', error: error.message });
   }
 };
 
