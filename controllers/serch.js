@@ -4,19 +4,31 @@ import Brand from '../models/brand.js';
 import Product from '../models/pro-products.js';
 import ProProject from '../models/pro-projects.js';
 import User from '../models/user.js';
+import validator from 'validator';
+
 
 export const fuzzySearchAll = async (req, res) => {
     const { q = '', page = 1, limit = 10 } = req.query;
+
+    // function escapeRegex(input) {
+    //     return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    // }
+
+    // Sanitize and validate query inputs
+    const sanitizedQuery = validator.escape(q.trim()); // Remove potential XSS payloads
+    // const safeQuery = escapeRegex(sanitizedQuery);
 
     try {
         const parsedPage = parseInt(page, 10) < 1 ? 1 : parseInt(page, 10);
         const parsedLimit = parseInt(limit, 10) < 1 ? 10 : parseInt(limit, 10);
         const skip = (parsedPage - 1) * parsedLimit;
 
+
+
         // Build the regex for fuzzy matching
-        const regex = new RegExp(q.split('').join('.*'), 'i'); // Fuzzy matching regex
+        const regex = new RegExp(sanitizedQuery.split('').join('.*'), 'i');
 
-
+        console.log("regex: " + JSON.stringify(sanitizedQuery))
 
         // Fetch the current logged-in user's details to get their blockedUsers list
         const userId = req?.user;
@@ -62,7 +74,7 @@ export const fuzzySearchAll = async (req, res) => {
                             { about: regex }
                         ]
                     },
-                    { isViolated: { $ne: true } } // Exclude violated projects
+                    { isViolated: { $ne: true } }
                 ]
             }).skip(skip).populate('createdBy').limit(parsedLimit).lean(),
             ProProject.countDocuments({
@@ -125,7 +137,7 @@ export const fuzzySearchAll = async (req, res) => {
             //const productSellerIds = users
             //    .filter(user => user.role === 'Product Seller')
             //    .map(user => user._id);
-            
+
             // Fetch all relevant projects and products in bulk with pagination
             const [projects, projectsTotal, productsList, productsListTotal] = await Promise.all([
                 ProProject.find({
@@ -136,8 +148,8 @@ export const fuzzySearchAll = async (req, res) => {
                     createdBy: { $in: realtorOrProfIds },
                     isViolated: { $ne: true } // Exclude violated projects
                 }),
-            //   Product.find({ createdBy: { $in: productSellerIds } }).skip(skip).limit(parsedLimit).populate('createdBy').lean(),
-            //    Product.countDocuments({ createdBy: { $in: productSellerIds } }),
+                //   Product.find({ createdBy: { $in: productSellerIds } }).skip(skip).limit(parsedLimit).populate('createdBy').lean(),
+                //    Product.countDocuments({ createdBy: { $in: productSellerIds } }),
             ]);
 
             // Map projects and products to their respective users
@@ -172,7 +184,7 @@ export const fuzzySearchAll = async (req, res) => {
                 const userWithDetails = { ...user };
                 if (user.role === 'Realtor' || user.role === 'Professionals') {
                     userWithDetails.projects = projectsByUser[user._id.toString()] || [];
-                } 
+                }
                 //else if (user.role === 'Product Seller') {
                 //    userWithDetails.products = productsByUser[user._id.toString()] || [];
                 //}
