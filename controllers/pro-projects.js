@@ -566,7 +566,7 @@ export const filterProjects = async (req, res) => {
     const [projects, total] = await Promise.all([projectsPromise, countPromise]);
 
     // Filter out projects created by blocked users
-    // const filteredProjects = projects.filter(project => !blockedUsers.includes(project.createdBy._id.toString()));
+    const filteredProjects = projects.filter(project => !blockedUsers.includes(project.createdBy._id.toString()));
 
 
     // Calculate total pages
