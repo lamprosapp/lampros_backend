@@ -5,6 +5,7 @@ import {
   getOrderById,
   updateOrder,
   deleteOrder,
+  verifyPayment,
 } from '../controllers/order.js';
 import { protect } from '../middlewares/protect.js';
 
@@ -12,6 +13,9 @@ const router = express.Router();
 
 // Route to create an order
 router.post('/', protect, createOrder);
+
+router.post('/verify', verifyPayment); // Verify payment and update order status
+
 
 // Route to get all orders for the logged-in user
 router.get('/', protect, getOrders);

@@ -24,6 +24,7 @@ import ro_adr from './routes/deliveryAddressRoutes.js'
 import ro_review from './routes/review.js'
 import ro_qs from './routes/qs.js'
 import ro_ans from './routes/ans.js'
+import instantService from './routes/instantService.js'
 
 
 const app = express();
@@ -58,12 +59,13 @@ app.use('/api',protect, ro_enq);
 app.use('/api',protect, ro_fo);
 app.use('/api/adr',protect, ro_adr);
 app.use('/api/review',protect, ro_review);
+app.use('/api/instantService',protect, instantService);
 
 
 
 // Example route
 app.get('/', (req, res) => {
-  res.json({"status":"running in feature branch now testing..."})
+  res.json({"status":"running in main branch now testing..."})
 });
 
 app.use((req, res, next) => {

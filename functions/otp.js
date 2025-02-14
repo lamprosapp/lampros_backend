@@ -20,9 +20,9 @@ export const createOtpRequest = async (phoneNumber) => {
   // }
 
   await Otp.deleteMany({
-          phoneNumber,
-          expiresAt: { $lt: Date.now() }
-        });
+    phoneNumber,
+    expiresAt: { $lt: Date.now() }
+  });
 
   const otp = new Otp({ phoneNumber });
   otp.generateOtp();
@@ -58,7 +58,7 @@ export const verifyOtpAndLogin = async (phoneNumber, otp) => {
     return { message: 'User exists, but registration incomplete. Please complete your details.' };
   }
 
-  return { message: 'User logged in successfully.' , role: user.role };
+  return { message: 'User logged in successfully.', role: user.role };
 };
 
 
@@ -69,7 +69,14 @@ export const updateUserDetails = async (phoneNumber, updateFields) => {
     .sort({ createdAt: -1 }) // Sort by creation date in descending order to get the latest record
     .exec();
 
-  if (!otpRecord || !otpRecord.isVerified) throw new Error('Latest OTP not verified.');
+  if (!otpRecord || !otpRecord.isVerified) {
+    console.error(
+      'Error updating user details:',
+      { phoneNumber, updateFields, otpRecord },
+      'Latest OTP not verified.'
+    )
+    throw new Error('Latest OTP not verified.');
+  }
 
   // Find the user
   const user = await User.findOne({ phoneNumber });

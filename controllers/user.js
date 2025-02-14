@@ -513,7 +513,7 @@ export const filterUsersWithProjectsOrProducts = async (req, res) => {
 
     // Build a filter object for MongoDB
     let filter = { isViolated: { $ne: true } };
-    
+
     if (role) {
       const roleArray = role.split(','); // Split by comma for multiple roles
       filter.role = { $in: roleArray };
@@ -531,6 +531,7 @@ export const filterUsersWithProjectsOrProducts = async (req, res) => {
 
     // Build a filter object for MongoDB
     filter._id = { $nin: blockedUsers };
+
 
     // Fetch users based on the role and type with pagination
     const usersPromise = User.find(filter)

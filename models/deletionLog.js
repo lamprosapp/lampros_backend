@@ -5,7 +5,6 @@ const DeletionLogSchema = new mongoose.Schema({
     reason: { type: String, required: true },
     userDetails: {
         phoneNumber: { type: String, required: true },
-        email: { type: String, required: true },
         createdAt: { type: Date, required: true },
     },
     deletedAt: { type: Date, default: Date.now },

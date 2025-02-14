@@ -1,10 +1,9 @@
-import express from 'express';
-import { createEnquiry,getAllEnquiries } from '../controllers/enq.js';
+import express from "express";
+import { createEnquiry, getEnquiriesById, getEnquiriesByType } from "../controllers/enq.js";
 
 const router = express.Router();
 
 // POST route to create an enquiry
-router.post('/enquiries', createEnquiry);
-router.get('/AllEnquiries', getAllEnquiries)
-
+router.route("/enquiries").post(createEnquiry).get(getEnquiriesByType);
+router.get("/myEnquiries",getEnquiriesById)
 export default router;

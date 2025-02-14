@@ -1,11 +1,11 @@
 // models/notification.js
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
 const notificationSchema = new mongoose.Schema(
   {
     userId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
+      ref: "User",
       required: true,
     },
     title: {
@@ -15,6 +15,11 @@ const notificationSchema = new mongoose.Schema(
     body: {
       type: String,
       required: true,
+    },
+    type: {
+      type: String,
+      required: true,
+      // enum:['Instant Service',''],
     },
     token: {
       type: String,
@@ -30,6 +35,6 @@ const notificationSchema = new mongoose.Schema(
   }
 );
 
-const Notification = mongoose.model('Notification', notificationSchema);
+const Notification = mongoose.model("Notification", notificationSchema);
 
 export default Notification;
