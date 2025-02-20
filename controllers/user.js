@@ -137,7 +137,7 @@ export const deleteAccount = async (req, res) => {
 
 export const completeBasic = async (req, res) => {
   try {
-    const { phoneNumber, fname, lname, profileImage, address } = req.body;
+    const { phoneNumber, fname, lname, profileImage, address, gender } = req.body;
 
     // Filter out null or undefined fields
     const updateData = {};
@@ -145,6 +145,7 @@ export const completeBasic = async (req, res) => {
     if (lname) updateData.lname = lname;
     if (profileImage) updateData.profileImage = profileImage;
     if (address) updateData.address = address;
+    if (gender) updateData.gender = gender;
 
     // Update user details if there is data to update
     if (Object.keys(updateData).length > 0) {
