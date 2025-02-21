@@ -46,7 +46,6 @@ const UserSchema = new mongoose.Schema(
     email: { type: String },
     isVerified: { type: Boolean, default: false }, // New isVerified field for email verification
     phoneNumber: { type: String, required: true, unique: true },
-    gender: { type: String },
     fname: { type: String }, // First name
     lname: { type: String }, // Last name
     age: { type: Number },
