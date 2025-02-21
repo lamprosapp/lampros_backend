@@ -455,7 +455,7 @@ export const completeRegistration = async (req, res) => {
     // Optional: Send a welcome message via SMS
     // await sendSmsvia2fact(phoneNumber, `Your welcome message here...`);
 
-    res.status(200).json({ message: "Registration complete", token });
+    res.status(200).json({ message: "Registration Completed Successfully", token });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
