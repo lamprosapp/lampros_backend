@@ -1,28 +1,56 @@
-import ProProduct from '../models/pro-products.js';
-import Brand from '../models/brand.js';
-import mongoose from 'mongoose';
-import User from '../models/user.js';
+import ProProduct from "../models/pro-products.js";
+import Brand from "../models/brand.js";
+import mongoose from "mongoose";
+import User from "../models/user.js";
 
 // Controller to handle adding a new product with brand reference
 export const addProduct = async (req, res) => {
   try {
-
     const {
-      seller, name, category, subCategory, type, subType, price, quantity, about, technicalDetails,
-      manufactureDetails, warrantyAndCertifications, images, brandId,
-      loadCapacity, mountType, handleType, noOfHandles, hoseLength, storageCapacity, storageLayout,
-      doorType, seatingCapacity, frameMaterial, suspensionType, size, storageOptions, videoLink
+      seller,
+      name,
+      category,
+      subCategory,
+      type,
+      subType,
+      price,
+      quantity,
+      about,
+      technicalDetails,
+      manufactureDetails,
+      warrantyAndCertifications,
+      images,
+      brandId,
+      loadCapacity,
+      mountType,
+      handleType,
+      noOfHandles,
+      hoseLength,
+      storageCapacity,
+      storageLayout,
+      doorType,
+      seatingCapacity,
+      frameMaterial,
+      suspensionType,
+      size,
+      storageOptions,
+      videoLink,
+      discountPrice,
     } = req.body;
 
     // Validate required fields
     if (!name || !price || !quantity || !brandId) {
-      return res.status(400).json({ message: 'Name, price, quantity, and brand are required.' });
+      return res
+        .status(400)
+        .json({ message: "Name, price, quantity, and brand are required." });
     }
 
     // Check if the brand exists and is approved
     const brand = await Brand.findById(brandId);
     if (!brand) {
-      return res.status(400).json({ message: 'Brand not found or not approved by admin.' });
+      return res
+        .status(400)
+        .json({ message: "Brand not found or not approved by admin." });
     }
 
     const product = new ProProduct({
@@ -32,8 +60,9 @@ export const addProduct = async (req, res) => {
       subCategory,
       type,
       subType,
-      brand: brandId,  // Reference to the brand
+      brand: brandId, // Reference to the brand
       price,
+      discountPrice,
       quantity,
       about,
       technicalDetails,
@@ -62,9 +91,11 @@ export const addProduct = async (req, res) => {
     product.brand = brand; // Set the brand reference in the product
 
     // Send a success response
-    res.status(201).json({ message: 'Product created successfully', product });
+    res.status(201).json({ message: "Product created successfully", product });
   } catch (error) {
-    res.status(500).json({ message: 'Failed to create product', error: error.message });
+    res
+      .status(500)
+      .json({ message: "Failed to create product", error: error.message });
   }
 };
 
@@ -72,18 +103,28 @@ export const updateProduct = async (req, res) => {
   try {
     const { productId } = req.params; // Get product ID from the request parameters
     const {
-      seller, name, category, subCategory, type, subType, price, quantity, about, technicalDetails,
-      manufactureDetails, warrantyAndCertifications, images, brandId, videoLink
+      seller,
+      name,
+      category,
+      subCategory,
+      type,
+      subType,
+      price,
+      discountPrice,
+      quantity,
+      about,
+      technicalDetails,
+      manufactureDetails,
+      warrantyAndCertifications,
+      images,
+      brandId,
+      videoLink,
     } = req.body;
-
-
-
-
 
     // Find the product by ID
     const product = await ProProduct.findById(productId);
     if (!product) {
-      return res.status(404).json({ message: 'Product not found.' });
+      return res.status(404).json({ message: "Product not found." });
     }
 
     // Update the product with new data
@@ -95,22 +136,26 @@ export const updateProduct = async (req, res) => {
     product.subType = subType || product.subType;
     product.brand = brandId; // Reference to the updated brand
     product.price = price || product.price;
+    product.discountPrice = discountPrice || product.discountPrice;
     product.quantity = quantity || product.quantity;
     product.about = about || product.about;
     product.technicalDetails = technicalDetails || product.technicalDetails;
-    product.manufactureDetails = manufactureDetails || product.manufactureDetails;
-    product.warrantyAndCertifications = warrantyAndCertifications || product.warrantyAndCertifications;
+    product.manufactureDetails =
+      manufactureDetails || product.manufactureDetails;
+    product.warrantyAndCertifications =
+      warrantyAndCertifications || product.warrantyAndCertifications;
     product.images = images || product.images;
     if (videoLink) product.videoLink = videoLink;
-
 
     // Save the updated product to the database
     await product.save();
 
     // Send a success response with the updated product
-    res.status(200).json({ message: 'Product updated successfully', product });
+    res.status(200).json({ message: "Product updated successfully", product });
   } catch (error) {
-    res.status(500).json({ message: 'Failed to update product', error: error.message });
+    res
+      .status(500)
+      .json({ message: "Failed to update product", error: error.message });
   }
 };
 
@@ -123,21 +168,30 @@ export const deleteProduct = async (req, res) => {
 
     // If the product does not exist, return a 404 error
     if (!product) {
-      return res.status(404).json({ message: 'Product not found.' });
+      return res.status(404).json({ message: "Product not found." });
     }
 
     // Send a success response
-    res.status(200).json({ message: 'Product deleted successfully', product });
+    res.status(200).json({ message: "Product deleted successfully", product });
   } catch (error) {
     // Handle any errors that occur
-    res.status(500).json({ message: 'Failed to delete product', error: error.message });
+    res
+      .status(500)
+      .json({ message: "Failed to delete product", error: error.message });
   }
 };
 
 export const listAllProductsByIds = async (req, res) => {
   try {
     // Extract pagination parameters from query string
-    let { page = 1, limit = 10, sortBy = 'createdAt', order = 'desc', brand, search } = req.query;
+    let {
+      page = 1,
+      limit = 10,
+      sortBy = "createdAt",
+      order = "desc",
+      brand,
+      search,
+    } = req.query;
 
     // Extract product IDs from request body
     const { ids } = req.body;
@@ -151,7 +205,7 @@ export const listAllProductsByIds = async (req, res) => {
     if (isNaN(limit) || limit < 1) limit = 10;
 
     // Determine sort order
-    const sortOrder = order === 'asc' ? 1 : -1;
+    const sortOrder = order === "asc" ? 1 : -1;
 
     // Initialize filter for additional query options
     const filter = {};
@@ -160,23 +214,32 @@ export const listAllProductsByIds = async (req, res) => {
     if (brand) filter.brand = brand;
 
     // Add search filter if provided
-    if (search) filter.name = { $regex: search, $options: 'i' };
+    if (search) filter.name = { $regex: search, $options: "i" };
 
     // Fetch products by individual IDs using Product.findById
     let products = [];
     if (ids && Array.isArray(ids) && ids.length > 0) {
-      const productPromises = ids.map(id => ProProduct.findById(id).populate('createdBy', '-password').populate('brand').lean());
+      const productPromises = ids.map((id) =>
+        ProProduct.findById(id)
+          .populate("createdBy", "-password")
+          .populate("brand")
+          .lean()
+      );
       products = await Promise.all(productPromises);
     }
 
     // Apply additional filtering on the fetched products
     if (brand) {
-      products = products.filter(product => product && product.brand === brand);
+      products = products.filter(
+        (product) => product && product.brand === brand
+      );
     }
 
     if (search) {
-      const searchRegex = new RegExp(search, 'i');
-      products = products.filter(product => product && searchRegex.test(product.name));
+      const searchRegex = new RegExp(search, "i");
+      products = products.filter(
+        (product) => product && searchRegex.test(product.name)
+      );
     }
 
     // Apply sorting
@@ -202,17 +265,24 @@ export const listAllProductsByIds = async (req, res) => {
       products: paginatedProducts,
     });
   } catch (error) {
-    console.error('Error retrieving products:', error);
-    res.status(500).json({ message: 'Failed to retrieve products', error: error.message });
+    console.error("Error retrieving products:", error);
+    res
+      .status(500)
+      .json({ message: "Failed to retrieve products", error: error.message });
   }
 };
-
-
 
 // Controller to list all products with optional pagination
 export const listAllProducts = async (req, res) => {
   try {
-    let { page = 1, limit = 10, sortBy = 'createdAt', order = 'desc', brand, search } = req.query;
+    let {
+      page = 1,
+      limit = 10,
+      sortBy = "createdAt",
+      order = "desc",
+      brand,
+      search,
+    } = req.query;
 
     page = parseInt(page, 10);
     limit = parseInt(limit, 10);
@@ -220,11 +290,11 @@ export const listAllProducts = async (req, res) => {
     if (isNaN(page) || page < 1) page = 1;
     if (isNaN(limit) || limit < 1) limit = 10;
 
-    const sortOrder = order === 'asc' ? 1 : -1;
+    const sortOrder = order === "asc" ? 1 : -1;
     const filter = {};
 
     if (brand) filter.brand = brand;
-    if (search) filter.name = { $regex: search, $options: 'i' };
+    if (search) filter.name = { $regex: search, $options: "i" };
 
     const userId = req?.user;
     const user = userId ? await User.findById(userId) : null;
@@ -238,27 +308,31 @@ export const listAllProducts = async (req, res) => {
       page,
       limit,
       sort: { [sortBy]: sortOrder },
-      populate: [
-        { path: 'createdBy', select: '-password' },
-        { path: 'brand' },
-      ],
+      populate: [{ path: "createdBy", select: "-password" }, { path: "brand" }],
       lean: true,
     };
 
     const result = await ProProduct.paginate(filter, options);
 
+    // Modify each product to include `lastPrice`
+    const productsWithLastPrice = result.docs.map((product) => ({
+      ...product,
+      lastPrice: product.price - (product.discountPrice || 0), // Compute last price
+    }));
+
     res.status(200).json({
       currentPage: result.page,
       totalPages: result.totalPages,
       totalProducts: result.totalDocs,
-      products: result.docs,
+      products: productsWithLastPrice, // Send modified products
     });
   } catch (error) {
-    console.error('Error retrieving products:', error);
-    res.status(500).json({ message: 'Failed to retrieve products', error: error.message });
+    console.error("Error retrieving products:", error);
+    res
+      .status(500)
+      .json({ message: "Failed to retrieve products", error: error.message });
   }
 };
-
 
 export const filterProducts = async (req, res) => {
   try {
@@ -314,50 +388,51 @@ export const filterProducts = async (req, res) => {
       warrantyDuration,
       isoCertified,
       warranty,
-      sortBy = 'createdAt',
-      order = 'desc',
+      sortBy = "createdAt",
+      order = "desc",
     } = req.query;
 
     // Utility function to validate non-empty and non-null values
-    const isValid = (value) => value !== undefined && value !== null && value !== '';
+    const isValid = (value) =>
+      value !== undefined && value !== null && value !== "";
 
     // Add filters to the query object based on valid request parameters
     if (isValid(sellerName)) {
-      query['seller.name'] = { $in: sellerName.split(',') };
+      query["seller.name"] = { $in: sellerName.split(",") };
     }
 
     if (isValid(PhoneNumber)) {
-      query['seller.phoneNumber'] = { $in: PhoneNumber };
+      query["seller.phoneNumber"] = { $in: PhoneNumber };
     }
 
     if (isValid(brand)) {
-      const brandNames = brand.split(',');
+      const brandNames = brand.split(",");
 
       // Fetch matching brand IDs from the Brand collection
-      const brandDocs = await Brand.find({ name: { $in: brandNames } }, '_id');
+      const brandDocs = await Brand.find({ name: { $in: brandNames } }, "_id");
       const brandIds = brandDocs.map((doc) => doc._id);
 
       query.brand = { $in: brandIds };
     }
 
     if (isValid(location)) {
-      query['seller.location'] = location;
+      query["seller.location"] = location;
     }
 
     if (isValid(category)) {
-      query.category = { $in: category.split(',') };
+      query.category = { $in: category.split(",") };
     }
 
     if (isValid(subCategory)) {
-      query.subCategory = { $in: subCategory.split(',') };
+      query.subCategory = { $in: subCategory.split(",") };
     }
 
     if (isValid(type)) {
-      query.type = { $in: type.split(',') };
+      query.type = { $in: type.split(",") };
     }
 
     if (isValid(subType)) {
-      query.subType = { $in: subType.split(',') };
+      query.subType = { $in: subType.split(",") };
     }
 
     if (isValid(minPrice) || isValid(maxPrice)) {
@@ -373,77 +448,97 @@ export const filterProducts = async (req, res) => {
     }
 
     if (isValid(color)) {
-      query['technicalDetails.color'] = { $in: color.split(',') };
+      query["technicalDetails.color"] = { $in: color.split(",") };
     }
 
     if (isValid(material)) {
-      query['technicalDetails.material'] = { $in: material.split(',') };
+      query["technicalDetails.material"] = { $in: material.split(",") };
     }
 
     if (isValid(weight)) {
-      query['technicalDetails.weight'] = { $in: weight.split(',').map(Number) };
+      query["technicalDetails.weight"] = { $in: weight.split(",").map(Number) };
     }
 
     if (isValid(baseWidth)) {
-      query['technicalDetails.baseWidth'] = { $in: baseWidth.split(',').map(Number) };
+      query["technicalDetails.baseWidth"] = {
+        $in: baseWidth.split(",").map(Number),
+      };
     }
 
     if (isValid(style)) {
-      query['technicalDetails.style'] = { $in: style.split(',') };
+      query["technicalDetails.style"] = { $in: style.split(",") };
     }
 
     if (isValid(installationType)) {
-      query['technicalDetails.installationType'] = { $in: installationType.split(',') };
+      query["technicalDetails.installationType"] = {
+        $in: installationType.split(","),
+      };
     }
 
     if (isValid(finishType)) {
-      query['technicalDetails.finishType'] = { $in: finishType.split(',') };
+      query["technicalDetails.finishType"] = { $in: finishType.split(",") };
     }
 
     if (isValid(drainType)) {
-      query['technicalDetails.drainType'] = { $in: drainType.split(',') };
+      query["technicalDetails.drainType"] = { $in: drainType.split(",") };
     }
 
     if (isValid(seatMaterial)) {
-      query['technicalDetails.seatMaterial'] = { $in: seatMaterial.split(',') };
+      query["technicalDetails.seatMaterial"] = { $in: seatMaterial.split(",") };
     }
 
     if (isValid(shape)) {
-      query['technicalDetails.shape'] = { $in: shape.split(',') };
+      query["technicalDetails.shape"] = { $in: shape.split(",") };
     }
 
     if (isValid(specialFeatures)) {
-      query['technicalDetails.specialFeatures'] = { $in: specialFeatures.split(',') };
+      query["technicalDetails.specialFeatures"] = {
+        $in: specialFeatures.split(","),
+      };
     }
 
     if (isValid(productModelNumber)) {
-      query['technicalDetails.productModelNumber'] = { $in: productModelNumber.split(',') };
+      query["technicalDetails.productModelNumber"] = {
+        $in: productModelNumber.split(","),
+      };
     }
 
     if (isValid(asinNumber)) {
-      query['technicalDetails.asinNumber'] = { $in: asinNumber.split(',') };
+      query["technicalDetails.asinNumber"] = { $in: asinNumber.split(",") };
     }
 
     if (isValid(productCareInstructions)) {
-      query['technicalDetails.productCareInstructions'] = { $in: productCareInstructions.split(',') };
+      query["technicalDetails.productCareInstructions"] = {
+        $in: productCareInstructions.split(","),
+      };
     }
 
     if (isValid(warrantyDuration)) {
-      query['warrantyAndCertifications.warrantyDuration'] = { $in: warrantyDuration.split(',').map(Number) };
+      query["warrantyAndCertifications.warrantyDuration"] = {
+        $in: warrantyDuration.split(",").map(Number),
+      };
     }
 
     if (isValid(warranty)) {
-      query['warrantyAndCertifications.warranty'] = warranty === 'true';
+      query["warrantyAndCertifications.warranty"] = warranty === "true";
     }
 
     if (isValid(isoCertified)) {
-      query['warrantyAndCertifications.isoCertified'] = isoCertified === 'true';
+      query["warrantyAndCertifications.isoCertified"] = isoCertified === "true";
     }
 
     // Sort validation and options
-    const allowedSortFields = ['createdAt', 'updatedAt', 'price', 'quantity', 'name'];
-    const sortByField = allowedSortFields.includes(sortBy) ? sortBy : 'createdAt';
-    const sortOrder = order.toLowerCase() === 'asc' ? 1 : -1;
+    const allowedSortFields = [
+      "createdAt",
+      "updatedAt",
+      "price",
+      "quantity",
+      "name",
+    ];
+    const sortByField = allowedSortFields.includes(sortBy)
+      ? sortBy
+      : "createdAt";
+    const sortOrder = order.toLowerCase() === "asc" ? 1 : -1;
 
     const sortOptions = { [sortByField]: sortOrder };
 
@@ -453,27 +548,30 @@ export const filterProducts = async (req, res) => {
     const blockedUsers = user?.blockedUsers || [];
 
     if (blockedUsers.length > 0) {
-      query['createdBy'] = { $nin: blockedUsers };
+      query["createdBy"] = { $nin: blockedUsers };
     }
 
     // Fetch products and total count
     const productsPromise = ProProduct.find(query)
-      .populate('createdBy', '-password')
-      .populate('brand')
+      .populate("createdBy", "-password")
+      .populate("brand")
       .sort(sortOptions)
       .skip(skip)
       .limit(limit)
-      .exec();
+      .lean();
 
     const countPromise = ProProduct.countDocuments(query).exec();
 
-    const [products, total] = await Promise.all([productsPromise, countPromise]);
+    const [products, total] = await Promise.all([
+      productsPromise,
+      countPromise,
+    ]);
 
     const totalPages = Math.ceil(total / limit);
 
     if (page > totalPages && totalPages !== 0) {
       return res.status(400).json({
-        message: 'Page number exceeds total pages.',
+        message: "Page number exceeds total pages.",
         currentPage: page,
         totalPages,
         totalProducts: total,
@@ -481,26 +579,33 @@ export const filterProducts = async (req, res) => {
       });
     }
 
+    const productsWithLastPrice = products.map((product) => ({
+      ...product,
+      lastPrice: product.price - (product.discountPrice || 0),
+    }));
+
     res.status(200).json({
       currentPage: page,
       totalPages,
-      totalProducts: total,
-      products,
+      totalProducts: productsWithLastPrice.length,
+      products: productsWithLastPrice,
     });
   } catch (error) {
-    res.status(500).json({ message: 'Failed to retrieve products', error: error.message });
+    res
+      .status(500)
+      .json({ message: "Failed to retrieve products", error: error.message });
   }
 };
-
-
-
-
-
 
 // Controller to list products created by the authenticated user
 export const listUserProducts = async (req, res) => {
   try {
-    let { page = 1, limit = 10, sortBy = 'createdAt', order = 'desc' } = req.query;
+    let {
+      page = 1,
+      limit = 10,
+      sortBy = "createdAt",
+      order = "desc",
+    } = req.query;
 
     page = parseInt(page, 10);
     limit = parseInt(limit, 10);
@@ -512,7 +617,7 @@ export const listUserProducts = async (req, res) => {
       limit = 10;
     }
 
-    const sortOrder = order === 'asc' ? 1 : -1;
+    const sortOrder = order === "asc" ? 1 : -1;
     const skip = (page - 1) * limit;
 
     // Make sure req.user is converted to ObjectId if needed
@@ -520,40 +625,51 @@ export const listUserProducts = async (req, res) => {
 
     // Fetch products created by the authenticated user
     const productsPromise = ProProduct.find({ createdBy: userId })
-      .populate('brand')
-      .populate('createdBy', '-password')
+      .populate("brand")
+      .populate("createdBy", "-password")
       .sort({ [sortBy]: sortOrder })
       .skip(skip)
-      .limit(limit);
+      .limit(limit)
+      .lean(); // Use lean() for better performance
 
     const countPromise = ProProduct.countDocuments({ createdBy: userId });
 
-    const [products, total] = await Promise.all([productsPromise, countPromise]);
+    const [products, total] = await Promise.all([
+      productsPromise,
+      countPromise,
+    ]);
 
     const totalPages = Math.ceil(total / limit);
 
     if (page > totalPages && totalPages !== 0) {
       return res.status(400).json({
-        message: 'Page number exceeds total pages.',
+        message: "Page number exceeds total pages.",
         currentPage: page,
         totalPages,
         totalProducts: total,
         products: [],
       });
     }
+    // Compute lastPrice for each product
+    const productsWithLastPrice = products.map((product) => ({
+      ...product,
+      lastPrice: product.price - (product.discountPrice || 0), // Compute last price
+    }));
 
     res.status(200).json({
       currentPage: page,
       totalPages,
       totalProducts: total,
-      products,
+      products: productsWithLastPrice,
     });
   } catch (error) {
-    console.error('Error retrieving user products:', error);
-    res.status(500).json({ message: 'Failed to retrieve user products', error: error.message });
+    console.error("Error retrieving user products:", error);
+    res.status(500).json({
+      message: "Failed to retrieve user products",
+      error: error.message,
+    });
   }
 };
-
 
 export const searchProducts = async (req, res) => {
   try {
@@ -596,53 +712,53 @@ export const searchProducts = async (req, res) => {
       material,
       warranty,
       isoCertified,
-      sortBy = 'createdAt',
-      order = 'desc',
+      sortBy = "createdAt",
+      order = "desc",
     } = req.query;
 
     // General search query with partial matching (fuzzy search)
     if (query) {
-      const regex = new RegExp(query.split('').join('.*'), 'i'); // Fuzzy matching regex
+      const regex = new RegExp(query.split("").join(".*"), "i"); // Fuzzy matching regex
       queryObject.$or = [
-        { 'seller.name': regex },
-        { 'seller.phoneNumber': regex },
+        { "seller.name": regex },
+        { "seller.phoneNumber": regex },
         { category: regex },
         { subCategory: regex },
         { type: regex },
         { subType: regex },
-        { 'technicalDetails.brand': regex },
-        { 'technicalDetails.color': regex },
-        { 'technicalDetails.material': regex },
+        { "technicalDetails.brand": regex },
+        { "technicalDetails.color": regex },
+        { "technicalDetails.material": regex },
       ];
     }
 
     // Add additional filters to the query object
     if (sellerName) {
-      queryObject['seller.name'] = { $in: sellerName.split(',') };
+      queryObject["seller.name"] = { $in: sellerName.split(",") };
     }
 
     if (sellerPhoneNumber) {
-      queryObject['seller.phoneNumber'] = { $in: sellerPhoneNumber.split(',') };
+      queryObject["seller.phoneNumber"] = { $in: sellerPhoneNumber.split(",") };
     }
 
     if (location) {
-      queryObject['seller.location'] = location; // Assuming exact match for location
+      queryObject["seller.location"] = location; // Assuming exact match for location
     }
 
     if (category) {
-      queryObject.category = { $in: category.split(',') };
+      queryObject.category = { $in: category.split(",") };
     }
 
     if (subCategory) {
-      queryObject.subCategory = { $in: subCategory.split(',') };
+      queryObject.subCategory = { $in: subCategory.split(",") };
     }
 
     if (type) {
-      queryObject.type = { $in: type.split(',') };
+      queryObject.type = { $in: type.split(",") };
     }
 
     if (subType) {
-      queryObject.subType = { $in: subType.split(',') };
+      queryObject.subType = { $in: subType.split(",") };
     }
 
     if (minPrice || maxPrice) {
@@ -659,78 +775,98 @@ export const searchProducts = async (req, res) => {
 
     // Accept multiple values for technical details
     if (color) {
-      queryObject['technicalDetails.color'] = { $in: color.split(',') };
+      queryObject["technicalDetails.color"] = { $in: color.split(",") };
     }
 
     if (material) {
-      queryObject['technicalDetails.material'] = { $in: material.split(',') };
+      queryObject["technicalDetails.material"] = { $in: material.split(",") };
     }
 
     if (weight) {
-      queryObject['technicalDetails.weight'] = { $in: weight.split(',').map(Number) };
+      queryObject["technicalDetails.weight"] = {
+        $in: weight.split(",").map(Number),
+      };
     }
 
     if (baseWidth) {
-      queryObject['technicalDetails.baseWidth'] = { $in: baseWidth.split(',').map(Number) };
+      queryObject["technicalDetails.baseWidth"] = {
+        $in: baseWidth.split(",").map(Number),
+      };
     }
 
     if (style) {
-      queryObject['technicalDetails.style'] = { $in: style.split(',') };
+      queryObject["technicalDetails.style"] = { $in: style.split(",") };
     }
 
     if (installationType) {
-      queryObject['technicalDetails.installationType'] = { $in: installationType.split(',') };
+      queryObject["technicalDetails.installationType"] = {
+        $in: installationType.split(","),
+      };
     }
 
     if (finishType) {
-      queryObject['technicalDetails.finishType'] = { $in: finishType.split(',') };
+      queryObject["technicalDetails.finishType"] = {
+        $in: finishType.split(","),
+      };
     }
 
     if (drainType) {
-      queryObject['technicalDetails.drainType'] = { $in: drainType.split(',') };
+      queryObject["technicalDetails.drainType"] = { $in: drainType.split(",") };
     }
 
     if (seatMaterial) {
-      queryObject['technicalDetails.seatMaterial'] = { $in: seatMaterial.split(',') };
+      queryObject["technicalDetails.seatMaterial"] = {
+        $in: seatMaterial.split(","),
+      };
     }
 
     if (shape) {
-      queryObject['technicalDetails.shape'] = { $in: shape.split(',') };
+      queryObject["technicalDetails.shape"] = { $in: shape.split(",") };
     }
 
     if (specialFeatures) {
-      queryObject['technicalDetails.specialFeatures'] = { $in: specialFeatures.split(',') };
+      queryObject["technicalDetails.specialFeatures"] = {
+        $in: specialFeatures.split(","),
+      };
     }
 
     if (productModelNumber) {
-      queryObject['technicalDetails.productModelNumber'] = { $in: productModelNumber.split(',') };
+      queryObject["technicalDetails.productModelNumber"] = {
+        $in: productModelNumber.split(","),
+      };
     }
 
     if (asinNumber) {
-      queryObject['technicalDetails.asinNumber'] = { $in: asinNumber.split(',') };
+      queryObject["technicalDetails.asinNumber"] = {
+        $in: asinNumber.split(","),
+      };
     }
 
     if (productCareInstructions) {
-      queryObject['technicalDetails.productCareInstructions'] = { $in: productCareInstructions.split(',') };
+      queryObject["technicalDetails.productCareInstructions"] = {
+        $in: productCareInstructions.split(","),
+      };
     }
 
     // Warranty and certifications filters
     if (warrantyDuration) {
-      queryObject['warrantyAndCertifications.warrantyDuration'] = { $in: warrantyDuration.split(',').map(Number) };
+      queryObject["warrantyAndCertifications.warrantyDuration"] = {
+        $in: warrantyDuration.split(",").map(Number),
+      };
     }
 
     if (warranty) {
-      queryObject['warrantyAndCertifications.warranty'] = warranty === 'true';
+      queryObject["warrantyAndCertifications.warranty"] = warranty === "true";
     }
 
     if (isoCertified) {
-      queryObject['warrantyAndCertifications.isoCertified'] = isoCertified === 'true';
+      queryObject["warrantyAndCertifications.isoCertified"] =
+        isoCertified === "true";
     }
 
     // Build sort options
     const sortOptions = {};
-    sortOptions[sortBy] = order === 'asc' ? 1 : -1;
-
+    sortOptions[sortBy] = order === "asc" ? 1 : -1;
 
     // Fetch the current logged-in user's details to get their blockedUsers list
     const userId = req?.user;
@@ -738,23 +874,26 @@ export const searchProducts = async (req, res) => {
     const blockedUsers = user?.blockedUsers || [];
 
     if (blockedUsers.length > 0) {
-      queryObject['createdBy'] = { $nin: blockedUsers };
+      queryObject["createdBy"] = { $nin: blockedUsers };
     }
 
     // Fetch products with pagination and populate brands
     const productsPromise = ProProduct.find(queryObject)
-      .populate('createdBy', '-password')
-      .populate('brand') // Populate the brand to access its name
+      .populate("createdBy", "-password")
+      .populate("brand") // Populate the brand to access its name
       .sort(sortOptions)
       .skip(skip)
       .limit(limit)
-      .exec();
+      .lean();
 
     // Get total count of products matching the query
     const countPromise = ProProduct.countDocuments(queryObject).exec();
 
     // Execute both queries in parallel
-    const [products, total] = await Promise.all([productsPromise, countPromise]);
+    const [products, total] = await Promise.all([
+      productsPromise,
+      countPromise,
+    ]);
 
     // Calculate total pages
     const totalPages = Math.ceil(total / limit);
@@ -762,7 +901,7 @@ export const searchProducts = async (req, res) => {
     // Handle case where requested page exceeds total pages
     if (page > totalPages && totalPages !== 0) {
       return res.status(400).json({
-        message: 'Page number exceeds total pages.',
+        message: "Page number exceeds total pages.",
         currentPage: page,
         totalPages,
         totalProducts: total,
@@ -770,11 +909,15 @@ export const searchProducts = async (req, res) => {
       });
     }
 
+    const productsWithLastPrice = products.map((product) => ({
+      ...product,
+      lastPrice: product.price - (product.discountPrice || 0),
+    }));
     // If brand filter is provided, filter products based on brand name
     if (brand) {
-      const brandNames = brand.split(',');
-      const filteredByBrand = filteredProducts.filter(product =>
-        product.brand && brandNames.includes(product.brand.name)
+      const brandNames = brand.split(",");
+      const filteredByBrand = productsWithLastPrice.filter(
+        (product) => product.brand && brandNames.includes(product.brand.name)
       );
       return res.status(200).json({
         currentPage: page,
@@ -788,10 +931,12 @@ export const searchProducts = async (req, res) => {
     res.status(200).json({
       currentPage: page,
       totalPages,
-      totalProducts: filteredProducts.length,
-      products,
+      totalProducts: productsWithLastPrice.length,
+      products: productsWithLastPrice,
     });
   } catch (error) {
-    res.status(500).json({ message: 'Failed to search products', error: error.message });
+    res
+      .status(500)
+      .json({ message: "Failed to search products", error: error.message });
   }
 };
