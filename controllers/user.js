@@ -202,6 +202,11 @@ export const update = async (req, res) => {
       age,
       gender,
       token,
+      subscriptionType,
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature,
+      couponCode,
     } = req.body;
 
     // Helper functions for specific checks
@@ -217,6 +222,60 @@ export const update = async (req, res) => {
     }
 
     console.log("Existing User:", existingUser);
+
+    // Normalize subscription type
+    const normalizedSubscriptionType = subscriptionType?.toLowerCase();
+
+    // Handle subscription updates
+    let updatedPremium = existingUser.premium || { isPremium: false };
+
+    if (normalizedSubscriptionType) {
+      if (normalizedSubscriptionType === "free") {
+        if (!isNonEmptyString(couponCode)) {
+          return res
+            .status(400)
+            .json({ message: "Invalid or missing coupon code" });
+        }
+        updatedPremium = { isPremium: false };
+      } else if (
+        ["1 month", "6 months", "12 months"].includes(
+          normalizedSubscriptionType
+        )
+      ) {
+        // Validate Razorpay payment
+        const hmac = crypto.createHmac(
+          "sha256",
+          process.env.RAZORPAY_KEY_SECRET
+        );
+        hmac.update(`${razorpay_order_id}|${razorpay_payment_id}`);
+        const generatedSignature = hmac.digest("hex");
+
+        if (generatedSignature !== razorpay_signature) {
+          return res.status(400).json({ message: "Invalid payment signature" });
+        }
+
+        // Calculate new expiration date
+        const now = new Date();
+        const expiresAt = new Date(now);
+
+        if (normalizedSubscriptionType === "1 month")
+          expiresAt.setMonth(expiresAt.getMonth() + 1);
+        if (normalizedSubscriptionType === "6 months")
+          expiresAt.setMonth(expiresAt.getMonth() + 6);
+        if (normalizedSubscriptionType === "12 months")
+          expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+
+        updatedPremium = {
+          isPremium: true,
+          category: "premium",
+          duration: normalizedSubscriptionType,
+          startedAt: now,
+          expiresAt,
+        };
+      } else {
+        return res.status(400).json({ message: "Invalid subscription type" });
+      }
+    }
 
     // Helper function to merge fields only if the new value is valid
     const mergeField = (existing, newField, validator) => {
@@ -290,6 +349,7 @@ export const update = async (req, res) => {
       ...(isValidNumber(age) && { age }),
       ...(isNonEmptyString(gender) && { gender }),
       ...(isNonEmptyString(token) && { token }),
+      premium: updatedPremium,
     };
 
     console.log("Updated Fields to Save:", updatedFields);
@@ -380,6 +440,11 @@ export const completeRegistration = async (req, res) => {
       });
     }
 
+    let defaultProfileImage =
+      gender === "Male"
+        ? "https://res.cloudinary.com/djoorspsc/image/upload/v1740047445/lampros_profiles/iwidctopmqqvsg0jmuto.png"
+        : "https://res.cloudinary.com/djoorspsc/image/upload/v1740047445/lampros_profiles/fwepyhda7knxbxoxznap.png";
+
     // Build the updated fields object
     const updatedFields = {
       fname,
@@ -388,7 +453,7 @@ export const completeRegistration = async (req, res) => {
       gender,
       profileImage: isNotEmpty(profileImage)
         ? profileImage
-        : "https://static.vecteezy.com/system/resources/previews/009/734/564/non_2x/default-avatar-profile-icon-of-social-media-user-vector.jpg",
+        : defaultProfileImage,
       role,
       type,
       email,
