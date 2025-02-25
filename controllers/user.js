@@ -150,7 +150,7 @@ export const deleteAccount = async (req, res) => {
 
 export const completeBasic = async (req, res) => {
   try {
-    const { phoneNumber, fname, lname, profileImage, address, gender } =
+    const { phoneNumber, fname, lname, profileImage, address, gender, email } =
       req.body;
 
     // Default profile image based on gender
@@ -166,6 +166,7 @@ export const completeBasic = async (req, res) => {
     updateData.profileImage = profileImage || defaultProfileImage;
     if (address) updateData.address = address;
     if (gender) updateData.gender = gender;
+    if (email) updateData.email = email;
 
     // Update user details if there is data to update
     if (Object.keys(updateData).length > 0) {
@@ -455,7 +456,9 @@ export const completeRegistration = async (req, res) => {
     // Optional: Send a welcome message via SMS
     // await sendSmsvia2fact(phoneNumber, `Your welcome message here...`);
 
-    res.status(200).json({ message: "Registration Completed Successfully", token });
+    res
+      .status(200)
+      .json({ message: "Registration Completed Successfully", token });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }

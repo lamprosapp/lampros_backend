@@ -48,6 +48,8 @@
     "multer-storage-cloudinary": "^4.0.0",
     "nanoid": "^5.0.7",
     "node-fetch": "^3.3.2",
+    "nodemailer": "^6.10.0",
+    "pdfkit": "^0.16.0",
     "pm2": "^5.4.2",
     "razorpay": "^2.9.5",
     "validator": "^13.12.0",

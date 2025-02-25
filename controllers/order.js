@@ -1,9 +1,9 @@
-import Order from '../models/order.js';
-import User from '../models/user.js';
-import Product from '../models/pro-products.js';
-import Razorpay from 'razorpay';
-import crypto from 'crypto';
-import SubscriptionPlan from '../models/subscriptionPlanModel.js';
+import Order from "../models/order.js";
+import User from "../models/user.js";
+import Product from "../models/pro-products.js";
+import Razorpay from "razorpay";
+import crypto from "crypto";
+import SubscriptionPlan from "../models/subscriptionPlanModel.js";
 
 // Middleware to ensure user is authenticated
 // Assume `protect` middleware sets `req.user` to the logged-in user's ID
@@ -15,44 +15,34 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
-
 // Create an order
 export const createOrder = async (req, res) => {
   try {
     const { productId, deliveryAddressId, quantity } = req.body;
 
     if (!req.user) {
-      return res.status(401).json({ message: 'Unauthorized user' });
+      return res.status(401).json({ message: "Unauthorized user" });
     }
 
     // Validate the product
     const product = await Product.findById(productId);
     if (!product) {
-      return res.status(404).json({ message: 'Product not found' });
+      return res.status(404).json({ message: "Product not found" });
     }
 
     // Find the user's delivery address
     const user = await User.findById(req.user);
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: "User not found" });
     }
 
     const deliveryAddress = user.deliveryAddresses.id(deliveryAddressId);
     if (!deliveryAddress) {
-      return res.status(404).json({ message: 'Delivery address not found' });
+      return res.status(404).json({ message: "Delivery address not found" });
     }
 
     // Calculate total amount
     const totalAmount = product.price * quantity * 100;
-
-
-    const receipt = `receipt_${Math.random().toString(36).substring(2)}`;
-    const razorpayOrder = await razorpay.orders.create({
-      amount: totalAmount,
-      currency: 'INR',
-      receipt,
-    });
-
 
     // Create the new order
     const newOrder = new Order({
@@ -64,26 +54,26 @@ export const createOrder = async (req, res) => {
         quantity,
       },
       totalAmount: totalAmount / 100, // Store amount in rupees for consistency
-      orderStatus: 'pending',
-      paymentMethod: 'Online Payment', // Default to Razorpay online payment
-      razorpayOrderId: razorpayOrder.id,
+      orderStatus: "pending",
+      paymentMethod: "Online Payment", // Default to Razorpay online payment
     });
 
     await newOrder.save();
 
     res.status(201).json({
       success: true,
-      message: 'Order created successfully',
+      message: "Order created successfully",
       order: newOrder,
-      razorpayDetails: razorpayOrder,
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: error.message });
   }
 };
 
-export const createSubscriptionOrder = async (amount, currency = 'INR') => {
+export const createSubscriptionOrder = async (amount, currency = "INR") => {
   try {
     const options = {
       amount: amount * 100,
@@ -94,7 +84,11 @@ export const createSubscriptionOrder = async (amount, currency = 'INR') => {
     const order = await razorpay.orders.create(options);
     return order;
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to create Razorpay order', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: "Failed to create Razorpay order",
+      error: error.message,
+    });
   }
 };
 
@@ -104,13 +98,13 @@ export const createSubscription = async (req, res) => {
 
     // Validate request
     if (!duration) {
-      return res.status(400).json({ message: 'Invalid subscription details' });
+      return res.status(400).json({ message: "Invalid subscription details" });
     }
 
     const plan = await SubscriptionPlan.findOne({ duration, isActive: true });
 
     if (!plan) {
-      return res.status(404).json({ message: 'Subscription plan not found' });
+      return res.status(404).json({ message: "Subscription plan not found" });
     }
 
     const { price } = plan;
@@ -125,33 +119,42 @@ export const createSubscription = async (req, res) => {
   }
 };
 
-
-
 export const verifySubscription = async (req, res) => {
   try {
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, duration } = req.body;
+    const {
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature,
+      duration,
+    } = req.body;
 
     // Validate Razorpay signature
-    const hmac = crypto.createHmac('sha256', process.env.RAZORPAY_KEY_SECRET);
+    const hmac = crypto.createHmac("sha256", process.env.RAZORPAY_KEY_SECRET);
     hmac.update(`${razorpay_order_id}|${razorpay_payment_id}`);
-    const generatedSignature = hmac.digest('hex');
+    const generatedSignature = hmac.digest("hex");
 
     if (generatedSignature !== razorpay_signature) {
-      return res.status(400).json({ success: false, message: 'Invalid payment signature' });
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid payment signature" });
     }
 
     // Fetch the subscription plan from the database
     const plan = await SubscriptionPlan.findOne({ duration, isActive: true });
     if (!plan) {
-      return res.status(404).json({ success: false, message: 'Subscription plan not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Subscription plan not found" });
     }
 
     // Calculate expiration date based on the plan duration
     const now = new Date();
     const expiresAt = new Date(now);
 
-    if (duration.includes('Month')) expiresAt.setMonth(expiresAt.getMonth() + parseInt(duration));
-    if (duration.includes('Year')) expiresAt.setFullYear(expiresAt.getFullYear() + parseInt(duration));
+    if (duration.includes("Month"))
+      expiresAt.setMonth(expiresAt.getMonth() + parseInt(duration));
+    if (duration.includes("Year"))
+      expiresAt.setFullYear(expiresAt.getFullYear() + parseInt(duration));
 
     // Update user's premium status
     const user = await User.findByIdAndUpdate(
@@ -174,38 +177,44 @@ export const verifySubscription = async (req, res) => {
   }
 };
 
-
-
 export const verifyPayment = async (req, res) => {
   try {
     const { razorpayOrderId, razorpayPaymentId, razorpaySignature } = req.body;
 
     // Generate the expected signature
     const expectedSignature = crypto
-      .createHmac('sha256', 'YOUR_RAZORPAY_SECRET')
+      .createHmac("sha256", "YOUR_RAZORPAY_SECRET")
       .update(`${razorpayOrderId}|${razorpayPaymentId}`)
-      .digest('hex');
+      .digest("hex");
 
     // Verify the signature
     if (expectedSignature !== razorpaySignature) {
-      return res.status(400).json({ success: false, message: 'Invalid signature' });
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid signature" });
     }
 
     // Update the order status in the database
     const order = await Order.findOneAndUpdate(
       { razorpayOrderId },
-      { orderStatus: 'paid', razorpayPaymentId },
+      { orderStatus: "paid", razorpayPaymentId },
       { new: true }
     );
 
     if (!order) {
-      return res.status(404).json({ success: false, message: 'Order not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Order not found" });
     }
 
-    res.status(200).json({ success: true, message: 'Payment verified successfully', order });
+    res
+      .status(200)
+      .json({ success: true, message: "Payment verified successfully", order });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: error.message });
   }
 };
 
@@ -230,15 +239,17 @@ export const getOrders = async (req, res) => {
     if (orderStatus) {
       query.orderStatus = orderStatus; // Filter by orderStatus if provided
     }
-    if (user === 'true') {
+    if (user === "true") {
       query.user = req.user; // Filter by user if user=true
     }
 
     // If createdBy=true, filter orders by products created by the logged-in user
-    if (createdBy === 'true') {
-      const products = await Product.find({ createdBy: req.user }).select('_id');
+    if (createdBy === "true") {
+      const products = await Product.find({ createdBy: req.user }).select(
+        "_id"
+      );
       const productIds = products.map((product) => product._id);
-      query['product.productId'] = { $in: productIds }; // Filter orders by these product IDs
+      query["product.productId"] = { $in: productIds }; // Filter orders by these product IDs
     }
 
     const removeOrderStatusFromQuery = (query) => {
@@ -247,18 +258,19 @@ export const getOrders = async (req, res) => {
       return modifiedQuery;
     };
 
-
     // Get total count for the current query
-    const totalOrderCount = await Order.countDocuments(removeOrderStatusFromQuery(query));
+    const totalOrderCount = await Order.countDocuments(
+      removeOrderStatusFromQuery(query)
+    );
 
     // Fetch paginated orders based on the query
     const orders = await Order.find(query)
       .skip(skip)
       .limit(limit)
       .populate({
-        path: 'product.productId',
+        path: "product.productId",
         populate: {
-          path: 'brand', // Populate brand field
+          path: "brand", // Populate brand field
         },
       });
 
@@ -271,7 +283,7 @@ export const getOrders = async (req, res) => {
           return matchQuery;
         })(),
       },
-      { $group: { _id: '$orderStatus', count: { $sum: 1 } } },
+      { $group: { _id: "$orderStatus", count: { $sum: 1 } } },
     ]).then((results) =>
       results.reduce((acc, { _id, count }) => {
         acc[_id] = count;
@@ -279,12 +291,13 @@ export const getOrders = async (req, res) => {
       }, {})
     );
 
-
     // Manually populate the delivery address
     const populatedOrders = await Promise.all(
       orders.map(async (order) => {
         const user = await User.findById(order.user);
-        const deliveryAddress = user?.deliveryAddresses.id(order.deliveryAddress);
+        const deliveryAddress = user?.deliveryAddresses.id(
+          order.deliveryAddress
+        );
         return {
           ...order._doc,
           deliveryAddress,
@@ -312,17 +325,11 @@ export const getOrders = async (req, res) => {
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: error.message });
   }
 };
-
-
-
-
-
-
-
-
 
 // Get a single order by ID with populated details
 export const getOrderById = async (req, res) => {
@@ -331,21 +338,23 @@ export const getOrderById = async (req, res) => {
 
     const order = await Order.findById(orderId)
       .populate({
-        path: 'product.productId',
+        path: "product.productId",
         populate: {
-          path: 'brandId', // Populate brandId inside Product
+          path: "brandId", // Populate brandId inside Product
         },
       })
-      .populate('deliveryAddress');
+      .populate("deliveryAddress");
 
     if (!order) {
-      return res.status(404).json({ message: 'Order not found' });
+      return res.status(404).json({ message: "Order not found" });
     }
 
     res.status(200).json({ success: true, data: order });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: error.message });
   }
 };
 
@@ -353,16 +362,18 @@ export const getOrderById = async (req, res) => {
 export const updateOrder = async (req, res) => {
   try {
     const { orderId } = req.params;
-    const { quantity, orderStatus, reasonToCancel} = req.body;
+    const { quantity, orderStatus, reasonToCancel } = req.body;
 
-    const order = await Order.findById(orderId).populate('product.productId');
+    const order = await Order.findById(orderId).populate("product.productId");
     if (!order) {
-      return res.status(404).json({ message: 'Order not found' });
+      return res.status(404).json({ message: "Order not found" });
     }
 
     if (quantity) {
       if (quantity <= 0) {
-        return res.status(400).json({ message: 'Quantity must be greater than zero' });
+        return res
+          .status(400)
+          .json({ message: "Quantity must be greater than zero" });
       }
       order.product.quantity = quantity;
       order.totalAmount = order.product.productId.price * quantity;
@@ -380,7 +391,9 @@ export const updateOrder = async (req, res) => {
     res.status(200).json({ success: true, data: order });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: error.message });
   }
 };
 
@@ -391,12 +404,16 @@ export const deleteOrder = async (req, res) => {
 
     const order = await Order.findByIdAndDelete(orderId);
     if (!order) {
-      return res.status(404).json({ message: 'Order not found' });
+      return res.status(404).json({ message: "Order not found" });
     }
 
-    res.status(200).json({ success: true, message: 'Order deleted successfully' });
+    res
+      .status(200)
+      .json({ success: true, message: "Order deleted successfully" });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: error.message });
   }
 };
