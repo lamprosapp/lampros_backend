@@ -55,7 +55,13 @@ const UserSchema = new mongoose.Schema(
     companyDetails: companyDetailsSchema, // Use the company details schema with updated address structure
     role: {
       type: String,
-      enum: ["Realtor", "Product Seller", "Professionals", "Home Owner"],
+      enum: [
+        "Realtor",
+        "Product Seller",
+        "Professionals",
+        "Home Owner",
+        "Admin",
+      ],
       default: "Home Owner",
     },
     type: { type: String },
