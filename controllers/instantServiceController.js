@@ -130,7 +130,7 @@ export const orderInstantService = async (req, res) => {
     return successResponse(
       res,
       "Instant service ordered successfully",
-      newService
+      newService.toObject()
     );
   } catch (error) {
     res
@@ -167,7 +167,7 @@ export const getInstantServices = async (req, res) => {
 
     const totalServices = await InstantService.countDocuments(filter);
     const services = await InstantService.find(filter)
-      .populate("user", "-password")
+      .populate({ path: "user", select: "-password" }) // Ensure correct population
       .skip(skip)
       .limit(limit);
 
@@ -212,6 +212,35 @@ export const getInstantServices = async (req, res) => {
     res
       .status(500)
       .json({ success: false, message: "Server error", error: error.message });
+  }
+};
+
+export const getInstantServiceById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user;
+
+    // Validate user
+    const user = await User.findById(userId);
+    if (!user) {
+      return errorResponse(res, 404, "User not found");
+    }
+
+    // Find the instant service by ID
+    const service = await InstantService.findById(id)
+      .populate({ path: "user", select: "-password" }) // Ensure correct population
+      .lean();
+    if (!service) {
+      return errorResponse(res, 404, "Instant service not found");
+    }
+
+    return successResponse(
+      res,
+      "Instant service retrieved successfully",
+      service
+    );
+  } catch (error) {
+    return errorResponse(res, 500, "Server error", error.message);
   }
 };
 
