@@ -26,6 +26,7 @@ import ro_ans from "./routes/ans.js";
 import instantService from "./routes/instantService.js";
 import adminBaseRoutes from "./routes/admin/baseRoutes.js";
 import adminAuthRoutes from "./routes/admin/authRoutes.js";
+import crmRoutes from "./routes/admin/crmRoutes.js";
 
 const app = express();
 
@@ -59,6 +60,7 @@ app.use("/api/adr", protect, ro_adr);
 app.use("/api/review", protect, ro_review);
 app.use("/api/instantService", protect, instantService);
 app.use("/api/admin", protect, adminProtect, adminBaseRoutes);
+app.use("/api/crm", protect, adminProtect, crmRoutes);
 
 // Example route
 app.get("/", (req, res) => {
