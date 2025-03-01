@@ -115,9 +115,11 @@ const UserSchema = new mongoose.Schema(
       },
       default: {},
     },
+    isBlock: { type: Boolean, default: false },
     adminDetails: {
       status: { type: String, enum: ["active", "inactive"], default: "active" },
       twoFactorEnabled: { type: Boolean, default: false },
+      username: { type: String },
     },
   },
   { timestamps: true } // Enable timestamps here
