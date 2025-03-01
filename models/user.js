@@ -115,6 +115,10 @@ const UserSchema = new mongoose.Schema(
       },
       default: {},
     },
+    adminDetails: {
+      status: { type: String, enum: ["active", "inactive"], default: "active" },
+      twoFactorEnabled: { type: Boolean, default: false },
+    },
   },
   { timestamps: true } // Enable timestamps here
 );

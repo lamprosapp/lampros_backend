@@ -19,8 +19,9 @@ export const successResponse = (res, message, data = {}, pagination = null) => {
 
 export const errorResponse = (res, statusCode, message, error = null) => {
   return res.status(statusCode).json({
+    status: statusCode,
     success: false,
     message,
-    error: error ? error.toString() : null,
+    error: error ? error.message || error : null,
   });
 };
