@@ -1,3 +1,4 @@
+import axios from "axios";
 import { InstantCategory, InstantService } from "../models/instantService.js";
 import User from "../models/user.js";
 import { errorResponse, successResponse } from "../utils/responseHandler.js";
@@ -129,7 +130,7 @@ export const orderInstantService = async (req, res) => {
     return successResponse(
       res,
       "Instant service ordered successfully",
-      newService
+      newService.toObject()
     );
   } catch (error) {
     res
@@ -141,24 +142,167 @@ export const orderInstantService = async (req, res) => {
 export const getInstantServices = async (req, res) => {
   try {
     const { professionalType } = req.query;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
 
-    const filter = professionalType
-      ? { "serviceDetails.category": professionalType }
-      : {};
-    const services = await InstantService.find(filter);
+    const userId = req.user;
+    const user = await User.findById(userId);
+    const userPincode = user?.address.pincode;
+    const now = new Date();
+    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+    let filter = {};
+    if (professionalType) {
+      filter["serviceDetails.category"] = professionalType;
+    }
+
+    filter.$or = [
+      {
+        createdAt: { $gte: oneDayAgo },
+        "deliveryAddress.pincode": userPincode,
+      },
+      { createdAt: { $lt: oneDayAgo } },
+    ];
+
+    const totalServices = await InstantService.countDocuments(filter);
+    const services = await InstantService.find(filter)
+      .populate({ path: "user", select: "-password" }) // Ensure correct population
+      .skip(skip)
+      .limit(limit);
 
     if (!services.length) {
       return errorResponse(res, 404, "No instant services found");
     }
 
+    const enhancedServices = await Promise.all(
+      services.map(async (service) => {
+        try {
+          const response = await axios.get(
+            `https://pincode.vercel.app/${service.deliveryAddress.pincode}`
+          );
+          const { taluk, districtName, stateName, officeNames } = response.data;
+
+          return {
+            ...service.toObject(),
+            pincodeDetails: {
+              taluk,
+              district: districtName,
+              state: stateName,
+              officeNames,
+            },
+          };
+        } catch (error) {
+          console.error(
+            `Error fetching pincode details for ${service.deliveryAddress.pincode}:`,
+            error.message
+          );
+          return { ...service.toObject(), pincodeDetails: null };
+        }
+      })
+    );
+
     return successResponse(res, "Instant services retrieved successfully", {
-      total: services.length,
-      services,
+      enhancedServices,
+      currentPage: page,
+      totalPages: Math.ceil(totalServices / limit),
+      totalServices,
     });
   } catch (error) {
     res
       .status(500)
       .json({ success: false, message: "Server error", error: error.message });
+  }
+};
+
+export const getAllInstantServices = async (req, res) => {
+  try {
+    const { professionalType } = req.query;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    let filter = {};
+    if (professionalType) {
+      filter["serviceDetails.category"] = professionalType;
+    }
+
+    const totalServices = await InstantService.countDocuments(filter);
+    const services = await InstantService.find(filter)
+      .populate({ path: "user", select: "-password" }) // Ensure correct population
+      .skip(skip)
+      .limit(limit);
+
+    if (!services.length) {
+      return errorResponse(res, 404, "No instant services found");
+    }
+
+    const enhancedServices = await Promise.all(
+      services.map(async (service) => {
+        try {
+          const response = await axios.get(
+            `https://pincode.vercel.app/${service.deliveryAddress.pincode}`
+          );
+          const { taluk, districtName, stateName, officeNames } = response.data;
+
+          return {
+            ...service.toObject(),
+            pincodeDetails: {
+              taluk,
+              district: districtName,
+              state: stateName,
+              officeNames,
+            },
+          };
+        } catch (error) {
+          console.error(
+            `Error fetching pincode details for ${service.deliveryAddress.pincode}:`,
+            error.message
+          );
+          return { ...service.toObject(), pincodeDetails: null };
+        }
+      })
+    );
+
+    return successResponse(res, "Instant services retrieved successfully", {
+      enhancedServices,
+      currentPage: page,
+      totalPages: Math.ceil(totalServices / limit),
+      totalServices,
+    });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: error.message });
+  }
+};
+
+export const getInstantServiceById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user;
+
+    // Validate user
+    const user = await User.findById(userId);
+    if (!user) {
+      return errorResponse(res, 404, "User not found");
+    }
+
+    // Find the instant service by ID
+    const service = await InstantService.findById(id)
+      .populate({ path: "user", select: "-password" }) // Ensure correct population
+      .lean();
+    if (!service) {
+      return errorResponse(res, 404, "Instant service not found");
+    }
+
+    return successResponse(
+      res,
+      "Instant service retrieved successfully",
+      service
+    );
+  } catch (error) {
+    return errorResponse(res, 500, "Server error", error.message);
   }
 };
 
@@ -173,7 +317,7 @@ export const getSubcategoryDetails = async (req, res) => {
     // Find the category that contains the subcategory
     const category = await InstantCategory.findOne({
       "subcategories.title": subcategoryName,
-    }).lean()
+    }).lean();
 
     if (!category) {
       return errorResponse(res, 404, "Subcategory not found");

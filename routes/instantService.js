@@ -1,5 +1,7 @@
 import express from "express";
 import {
+  getAllInstantServices,
+  getInstantServiceById,
   getInstantServices,
   getSubcategoryDetails,
   orderInstantService,
@@ -8,6 +10,8 @@ import {
 const router = express.Router();
 
 router.get("/", getInstantServices);
+router.get("/all", getAllInstantServices);
+router.get("/:id", getInstantServiceById);
 router.post("/order", orderInstantService);
 router.get("/subcategory", getSubcategoryDetails);
 

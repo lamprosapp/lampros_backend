@@ -482,12 +482,14 @@ export const completeRegistration = async (req, res) => {
 
     // Add premium subscription details if applicable
     if (
-      ["1 month", "6 months", "12 months"].includes(normalizedSubscriptionType)
+      ["1 month", "6 months", "12 months", "free"].includes(
+        normalizedSubscriptionType
+      )
     ) {
       const now = new Date();
       const expiresAt = new Date(now);
 
-      if (normalizedSubscriptionType === "1 month")
+      if (normalizedSubscriptionType === "1 month" || normalizedSubscriptionType === "free")
         expiresAt.setMonth(expiresAt.getMonth() + 1);
       if (normalizedSubscriptionType === "6 months")
         expiresAt.setMonth(expiresAt.getMonth() + 6);
@@ -650,7 +652,7 @@ export const uploadImages = async (req, res) => {
 export const filterUsersWithProjectsOrProducts = async (req, res) => {
   try {
     // Extract query parameters and pagination settings
-    const { role, type, page = 1, limit = 10 } = req.query;
+    const { role, type, page = 1, limit } = req.query;
 
     // Parse and validate pagination parameters
     const parsedPage = parseInt(page, 10) < 1 ? 1 : parseInt(page, 10);

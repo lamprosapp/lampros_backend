@@ -249,10 +249,14 @@ export const fuzzySearchAll = async (req, res) => {
     // Convert results to arrays
     const categoriesData = categories.map((category) => category);
     const brandsData = brands.map((brand) => brand);
-    const productsData = products.map((product) => product);
     const projectsData = proProjects.map((project) => project);
     const usersData = Object.values(usersWithDetails);
     const productSellersData = Object.values(productSellersWithDetails);
+    const productsData = products.map((product) => ({
+      ...product,
+      lastPrice: product.price - (product.discountPrice || 0),
+    }));
+
     // Send response with formatted structure
     res.status(200).json({
       success: true,
