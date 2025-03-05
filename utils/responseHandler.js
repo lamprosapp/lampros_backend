@@ -8,7 +8,7 @@ export const successResponse = (res, message, data = {}, pagination = null) => {
         ? {
             currentPage: pagination.currentPage,
             totalPages: pagination.totalPages,
-            totalEnquiries: pagination.totalEnquiries,
+            totalItems: pagination.totalItems,
           }
         : null,
     },

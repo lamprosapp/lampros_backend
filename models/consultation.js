@@ -27,10 +27,10 @@ const consultationSchema = new mongoose.Schema(
       required: [true, "Expected start date is required"],
       enum: [
         "immediately",
-        "within_one_month",
-        "one_to_three_months",
-        "three_to_six_months",
-        "within_one_year",
+        "within 1 month",
+        "1-3 months",
+        "3-6 months",
+        "within 1 year",
       ],
     },
     createdAt: {
