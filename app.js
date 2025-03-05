@@ -4,7 +4,13 @@ import connectDB from "./config/dbConfig.js";
 import corsMiddleware from "./middlewares/corsMiddleware.js";
 import config from "./config/serverConfig.js";
 import errorHandler from "./middlewares/errorHandler.js";
-import { adminProtect, protect } from "./middlewares/protect.js";
+import {
+  accountantProtect,
+  adminProtect,
+  crmProtect,
+  protect,
+  superAdminProtect,
+} from "./middlewares/protect.js";
 
 import ro_user from "./routes/user.js";
 import ro_utils from "./routes/utils.js";
@@ -27,6 +33,8 @@ import instantService from "./routes/instantService.js";
 import adminBaseRoutes from "./routes/admin/baseRoutes.js";
 import adminAuthRoutes from "./routes/admin/authRoutes.js";
 import crmRoutes from "./routes/admin/crmRoutes.js";
+import superAdminRoutes from "./routes/admin/superAdminRoutes.js";
+import accountantRoutes from "./routes/admin/accountantRoutes.js";
 
 const app = express();
 
@@ -60,7 +68,9 @@ app.use("/api/adr", protect, ro_adr);
 app.use("/api/review", protect, ro_review);
 app.use("/api/instantService", protect, instantService);
 app.use("/api/admin", protect, adminProtect, adminBaseRoutes);
-app.use("/api/crm", protect, adminProtect, crmRoutes);
+app.use("/api/crm", protect, crmProtect, crmRoutes);
+app.use("/api/accountant", protect, accountantProtect, accountantRoutes);
+app.use("/api/super-admin", protect, superAdminProtect, superAdminRoutes);
 
 // Example route
 app.get("/", (req, res) => {
