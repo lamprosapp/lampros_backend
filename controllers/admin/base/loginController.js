@@ -23,7 +23,7 @@ export const Login = async (req, res, next) => {
     // Find the user by email and role
     const user = await User.findOne({ email, type: role });
     if (!user) {
-      return errorResponse(res, 404, "User not found");
+      return errorResponse(res, 404, "Access denied: Insufficient permissions");
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
@@ -37,7 +37,7 @@ export const Login = async (req, res, next) => {
     //   }
 
     // Generate JWT token using the utility function
-    const token = generateToken(user._id); 
+    const token = generateToken(user._id);
 
     return successResponse(res, `${role} Login successful.`, {
       token,
@@ -48,7 +48,7 @@ export const Login = async (req, res, next) => {
         role: user.role,
         type: user.type,
         name: `${user.fname} ${user.lname}`,
-        data:user
+        data: user,
       },
     });
   } catch (error) {
