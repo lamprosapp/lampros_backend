@@ -234,11 +234,18 @@ export const getInstantServiceById = async (req, res) => {
       return errorResponse(res, 404, "Instant service not found");
     }
 
-    return successResponse(
-      res,
-      "Instant service retrieved successfully",
-      service
-    );
+    const pincode = service.deliveryAddress.pincode;
+
+    // Find professionals with the same pincode
+    const professionals = await User.find({
+      "companyDetails.companyAddress.pincode": pincode,
+      role: "Professionals", // Assuming "Professionals" is the role
+    }).select("-password -__v"); // Exclude sensitive fields
+
+    return successResponse(res, "Instant service retrieved successfully", {
+      service,
+      professionals,
+    });
   } catch (error) {
     return errorResponse(res, 500, "Server error", error.message);
   }
